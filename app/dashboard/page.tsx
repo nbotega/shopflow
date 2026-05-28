@@ -74,9 +74,12 @@ export default async function DashboardPage() {
 
         <CSVUpload />
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
           <Button asChild variant="outline">
-            <Link href="/dashboard/creators">Ver todas as afiliadas →</Link>
+            <Link href="/dashboard/creators">Ver afiliadas →</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/dashboard/scores">Ver ranking de scores →</Link>
           </Button>
         </div>
 

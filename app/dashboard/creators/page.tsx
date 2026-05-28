@@ -165,14 +165,12 @@ export default async function CreatorsPage() {
               {rows.map((c) => (
                 <tr key={c.id} className="border-b hover:bg-muted/20">
                   <td className="px-4 py-3 font-mono text-xs">
-                    <a
-                      href={`https://www.tiktok.com/@${c.tiktok_handle}`}
-                      target="_blank"
-                      rel="noreferrer"
+                    <Link
+                      href={`/dashboard/creators/${c.id}`}
                       className="hover:underline"
                     >
                       @{c.tiktok_handle}
-                    </a>
+                    </Link>
                   </td>
                   <td className="px-4 py-3 max-w-[180px] truncate">
                     {c.display_name ?? "—"}
