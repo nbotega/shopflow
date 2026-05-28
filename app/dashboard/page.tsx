@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DiscoverButton } from "@/components/discover-button";
+import { CSVUpload } from "@/components/csv-upload";
 
 type BrandRow = {
   id: string;
@@ -65,9 +65,18 @@ export default async function DashboardPage() {
 
       <main className="max-w-7xl mx-auto px-6 py-12 space-y-8">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Marcas</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Pool de afiliadas</h2>
           <p className="text-muted-foreground mt-1">
-            Dispare descoberta de creators no TikTok pra cada marca. Próximo passo do pipeline (enriquecimento + análise IA) chega em seguida.
+            Importe a lista de afiliadas reais TikTok Shop. A IA vai pontuar cada uma contra cada marca.
+          </p>
+        </div>
+
+        <CSVUpload />
+
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight pt-8">Marcas</h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Cada afiliada do pool é analisada uma vez por marca.
           </p>
         </div>
 
@@ -75,15 +84,15 @@ export default async function DashboardPage() {
           {brands.map((brand) => {
             const stats = statsByBrand.get(brand.id) ?? { total: 0, pending: 0 };
             return (
-              <Card key={brand.id} className="hover:border-foreground transition-colors">
+              <Card key={brand.id}>
                 <CardHeader>
                   <CardTitle>{brand.name}</CardTitle>
                   <CardDescription>{clientName(brand.clients)}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent>
                   <div className="text-sm text-muted-foreground space-y-1">
                     <p>
-                      Creators no pool:{" "}
+                      Afiliadas pra analisar:{" "}
                       <span className="text-foreground font-medium">{stats.total}</span>
                       {stats.pending > 0 && (
                         <span className="text-muted-foreground"> · {stats.pending} pendentes</span>
@@ -94,7 +103,6 @@ export default async function DashboardPage() {
                       {brand.score_threshold_monitor}
                     </p>
                   </div>
-                  <DiscoverButton brandId={brand.id} brandName={brand.name} />
                 </CardContent>
               </Card>
             );
@@ -107,7 +115,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="text-xs text-muted-foreground border-t pt-6 mt-12">
-          MVP em construção. Cada clique em &quot;Descobrir&quot; gasta créditos SociaVault (1 por marca).
+          Próxima fase: pipeline de enriquecimento (Apify) + análise IA (Claude + Gemini).
         </div>
       </main>
     </div>
