@@ -131,13 +131,38 @@ function getPricing(model: string): { input: number; output: number } {
 // API CALL
 // ============================================================
 
-export async function analyzeVideoAesthetics(
-  videoBytes: Buffer,
-  mimeType: string = "video/mp4",
-  model: string = DEFAULT_MODEL
-): Promise<GeminiAnalysisResult> {
-  const ai = getClient();
+// Cadeia de fallback: tenta o principal, depois lite, depois 3-flash-preview
+const MODEL_FALLBACK_CHAIN = [
+  DEFAULT_MODEL,
+  "gemini-2.5-flash-lite",
+  "gemini-3-flash-preview",
+];
 
+const RETRY_DELAYS_MS = [2000, 5000, 10000]; // backoff dentro de cada modelo
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableError(err: unknown): boolean {
+  if (!err) return false;
+  const msg = err instanceof Error ? err.message : String(err);
+  // 503 overloaded, 429 rate limit, 500 internal, network errors
+  return /\b(503|429|500|502|504|UNAVAILABLE|RESOURCE_EXHAUSTED|INTERNAL|fetch failed|network|timeout)\b/i.test(
+    msg
+  );
+}
+
+async function callGeminiOnce(
+  ai: ReturnType<typeof getClient>,
+  model: string,
+  videoBytes: Buffer,
+  mimeType: string
+): Promise<{
+  rawText: string;
+  inputTokens: number;
+  outputTokens: number;
+}> {
   const response = await ai.models.generateContent({
     model,
     contents: [
@@ -165,33 +190,75 @@ export async function analyzeVideoAesthetics(
   });
 
   const rawText = response.text;
-  if (!rawText) {
-    throw new Error("Gemini retornou resposta vazia");
-  }
-
-  let analysis: VideoAestheticAnalysis;
-  try {
-    analysis = JSON.parse(rawText);
-  } catch (err) {
-    throw new Error(
-      `Gemini JSON parse failed: ${err instanceof Error ? err.message : err}. Raw: ${rawText.slice(0, 200)}`
-    );
-  }
+  if (!rawText) throw new Error("Gemini retornou resposta vazia");
 
   const usage = response.usageMetadata;
-  const inputTokens = usage?.promptTokenCount ?? 0;
-  const outputTokens = usage?.candidatesTokenCount ?? 0;
-  const pricing = getPricing(model);
-  const cost =
-    (inputTokens * pricing.input) / 1_000_000 +
-    (outputTokens * pricing.output) / 1_000_000;
-
   return {
-    analysis,
-    model,
-    raw_response: rawText,
-    cost_usd: cost,
-    input_tokens: inputTokens,
-    output_tokens: outputTokens,
+    rawText,
+    inputTokens: usage?.promptTokenCount ?? 0,
+    outputTokens: usage?.candidatesTokenCount ?? 0,
   };
+}
+
+export async function analyzeVideoAesthetics(
+  videoBytes: Buffer,
+  mimeType: string = "video/mp4",
+  preferredModel: string = DEFAULT_MODEL
+): Promise<GeminiAnalysisResult> {
+  const ai = getClient();
+
+  // Constrói cadeia começando pelo preferido
+  const chain = [preferredModel, ...MODEL_FALLBACK_CHAIN.filter((m) => m !== preferredModel)];
+
+  let lastError: unknown = null;
+
+  for (const model of chain) {
+    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+      try {
+        const { rawText, inputTokens, outputTokens } = await callGeminiOnce(
+          ai,
+          model,
+          videoBytes,
+          mimeType
+        );
+
+        let analysis: VideoAestheticAnalysis;
+        try {
+          analysis = JSON.parse(rawText);
+        } catch (err) {
+          throw new Error(
+            `JSON parse: ${err instanceof Error ? err.message : err}. Raw: ${rawText.slice(0, 150)}`
+          );
+        }
+
+        const pricing = getPricing(model);
+        const cost =
+          (inputTokens * pricing.input) / 1_000_000 +
+          (outputTokens * pricing.output) / 1_000_000;
+
+        return {
+          analysis,
+          model,
+          raw_response: rawText,
+          cost_usd: cost,
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
+        };
+      } catch (err) {
+        lastError = err;
+        if (!isRetryableError(err)) {
+          // Erro não-retryable: pula direto pro próximo modelo
+          break;
+        }
+        if (attempt < RETRY_DELAYS_MS.length) {
+          await sleep(RETRY_DELAYS_MS[attempt]);
+        }
+      }
+    }
+  }
+
+  const msg = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(
+    `Gemini falhou após tentar [${chain.join(", ")}] com retries: ${msg.slice(0, 200)}`
+  );
 }
