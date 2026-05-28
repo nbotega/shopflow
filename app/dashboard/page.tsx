@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,12 @@ export default async function DashboardPage() {
         </div>
 
         <CSVUpload />
+
+        <div className="flex justify-end">
+          <Button asChild variant="outline">
+            <Link href="/dashboard/creators">Ver todas as afiliadas →</Link>
+          </Button>
+        </div>
 
         <div>
           <h2 className="text-2xl font-bold tracking-tight pt-8">Marcas</h2>
