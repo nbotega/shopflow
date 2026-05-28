@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { EnrichButton } from "@/components/enrich-button";
 import { BatchEnrichButton } from "@/components/batch-enrich-button";
+import { BatchTranscribeButton } from "@/components/batch-transcribe-button";
 
 type CreatorRow = {
   id: string;
@@ -13,6 +14,8 @@ type CreatorRow = {
   loreal_human_label_normalized: string | null;
   loreal_human_label: string | null;
   enrichment_status: string;
+  transcripts_status: string;
+  transcripts_done_count: number | null;
   follower_count: number | null;
   last_enriched_at: string | null;
 };
@@ -59,7 +62,7 @@ export default async function CreatorsPage() {
   const { data: creators } = await supabase
     .from("creators")
     .select(
-      "id, tiktok_handle, display_name, gmv_total_brl, orders_total, loreal_human_label_normalized, loreal_human_label, enrichment_status, follower_count, last_enriched_at"
+      "id, tiktok_handle, display_name, gmv_total_brl, orders_total, loreal_human_label_normalized, loreal_human_label, enrichment_status, transcripts_status, transcripts_done_count, follower_count, last_enriched_at"
     )
     .order("gmv_total_brl", { ascending: false, nullsFirst: false });
 
@@ -100,6 +103,15 @@ export default async function CreatorsPage() {
             <BatchEnrichButton
               pendingIds={rows
                 .filter((r) => r.enrichment_status === "pending")
+                .map((r) => r.id)}
+            />
+            <BatchTranscribeButton
+              creatorIds={rows
+                .filter(
+                  (r) =>
+                    r.enrichment_status === "enriched" &&
+                    r.transcripts_status !== "done"
+                )
                 .map((r) => r.id)}
             />
           </div>

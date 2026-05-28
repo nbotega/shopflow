@@ -156,3 +156,86 @@ export async function getCreditsBalance(): Promise<{
 }> {
   return sociavaultGet("/v1/scrape/credits", {});
 }
+
+// ============================================================
+// TRANSCRIPT
+// ============================================================
+
+export type SociavaultTranscriptResponse = {
+  success: boolean;
+  data: {
+    id: string;
+    url: string;
+    transcript: string; // formato WEBVTT
+  };
+  credits_used: number;
+  endpoint: string;
+};
+
+/**
+ * Pega transcript de UM vídeo TikTok via SociaVault.
+ * Custo: 1 crédito (10 com AI fallback).
+ * Retorna WEBVTT que precisa ser parseado pra texto puro.
+ */
+export async function getTikTokTranscript(
+  url: string,
+  language: string = "pt",
+  useAiFallback: boolean = false
+): Promise<SociavaultTranscriptResponse> {
+  return sociavaultGet<SociavaultTranscriptResponse>(
+    "/v1/scrape/tiktok/transcript",
+    {
+      url,
+      language,
+      use_ai_as_fallback: useAiFallback ? "true" : undefined,
+    }
+  );
+}
+
+/**
+ * Parse WEBVTT em (a) texto puro e (b) segments com timestamps.
+ * Formato esperado:
+ *   WEBVTT
+ *
+ *   00:00:00.120 --> 00:00:01.840
+ *   Alright, pizza review time.
+ */
+export function parseWebVTT(vtt: string): {
+  fullText: string;
+  segments: Array<{ start: string; end: string; text: string }>;
+} {
+  const segments: Array<{ start: string; end: string; text: string }> = [];
+  if (!vtt) return { fullText: "", segments };
+
+  const lines = vtt.split(/\r?\n/);
+  let i = 0;
+  // Skip header
+  while (i < lines.length && !lines[i].includes("-->")) i++;
+
+  while (i < lines.length) {
+    const tsLine = lines[i];
+    const match = tsLine.match(
+      /^(\d\d:\d\d:\d\d[.,]\d{3})\s*-->\s*(\d\d:\d\d:\d\d[.,]\d{3})/
+    );
+    if (!match) {
+      i++;
+      continue;
+    }
+    const start = match[1];
+    const end = match[2];
+    const textLines: string[] = [];
+    i++;
+    while (i < lines.length && lines[i].trim() !== "") {
+      // pula se for outro timestamp (não deveria, mas safety)
+      if (lines[i].includes("-->")) break;
+      textLines.push(lines[i].trim());
+      i++;
+    }
+    const text = textLines.join(" ").trim();
+    if (text) segments.push({ start, end, text });
+    i++;
+  }
+
+  const fullText = segments.map((s) => s.text).join(" ").trim();
+  return { fullText, segments };
+}
