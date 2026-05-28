@@ -69,16 +69,24 @@ export function VisualButton({
         )}
       </Button>
       {result && !loading && (
-        <span
-          className={`text-[10px] ${
+        <div
+          className={`text-[10px] max-w-[300px] text-right break-words ${
             result.success ? "text-foreground" : "text-destructive"
           }`}
-          title={result.errors?.join(" | ")}
         >
-          {result.success
-            ? `${result.analyzed} vid · $${result.cost_usd?.toFixed(3)}`
-            : "falhou"}
-        </span>
+          {result.success ? (
+            `${result.analyzed} vid · $${result.cost_usd?.toFixed(3)}`
+          ) : (
+            <details>
+              <summary className="cursor-pointer">falhou</summary>
+              <ul className="mt-1 text-left">
+                {(result.errors ?? ["sem detalhes"]).map((e, i) => (
+                  <li key={i}>{e}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
       )}
     </div>
   );
