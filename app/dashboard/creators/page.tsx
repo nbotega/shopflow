@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { EnrichButton } from "@/components/enrich-button";
+import { BatchEnrichButton } from "@/components/batch-enrich-button";
 
 type CreatorRow = {
   id: string;
@@ -87,13 +88,20 @@ export default async function CreatorsPage() {
               Afiliadas ({totals.all})
             </h1>
           </div>
-          <div className="text-xs text-muted-foreground flex gap-4">
-            <span>{totals.pending} pendentes</span>
-            <span>{totals.enriching} processando</span>
-            <span>{totals.enriched} enriquecidas</span>
-            {totals.failed > 0 && (
-              <span className="text-destructive">{totals.failed} falhas</span>
-            )}
+          <div className="flex items-center gap-6">
+            <div className="text-xs text-muted-foreground flex gap-4">
+              <span>{totals.pending} pendentes</span>
+              <span>{totals.enriching} processando</span>
+              <span>{totals.enriched} enriquecidas</span>
+              {totals.failed > 0 && (
+                <span className="text-destructive">{totals.failed} falhas</span>
+              )}
+            </div>
+            <BatchEnrichButton
+              pendingIds={rows
+                .filter((r) => r.enrichment_status === "pending")
+                .map((r) => r.id)}
+            />
           </div>
         </div>
       </header>
