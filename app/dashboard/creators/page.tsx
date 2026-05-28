@@ -5,6 +5,7 @@ import { EnrichButton } from "@/components/enrich-button";
 import { BatchEnrichButton } from "@/components/batch-enrich-button";
 import { BatchTranscribeButton } from "@/components/batch-transcribe-button";
 import { BatchJudgeButton } from "@/components/batch-judge-button";
+import { BatchVisualButton } from "@/components/batch-visual-button";
 
 type CreatorRow = {
   id: string;
@@ -132,6 +133,11 @@ export default async function CreatorsPage() {
                     r.enrichment_status === "enriched" &&
                     r.transcripts_status !== "done"
                 )
+                .map((r) => r.id)}
+            />
+            <BatchVisualButton
+              creatorIds={rows
+                .filter((r) => r.enrichment_status === "enriched")
                 .map((r) => r.id)}
             />
             <BatchJudgeButton assignmentIds={judgeableIds} />

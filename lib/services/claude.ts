@@ -37,7 +37,18 @@ export type CreatorContextForJudgment = {
     posted_at: string | null;
     transcript: string | null;
     is_tiktok_shop: boolean;
+    visual_analysis: {
+      paleta?: string[];
+      iluminacao?: string;
+      cenario?: string;
+      vibe?: string;
+      luxo?: string[];
+      anti_luxo?: string[];
+      summary?: string;
+      production_quality_score?: number;
+    } | null;
   }>;
+  exemplar_handles_sim: string[]; // exemplares "sim" do time L'Oréal pra calibração
 };
 
 export type LuxoFitScore = {
@@ -90,7 +101,7 @@ function buildUserMessage(
   ].join("\n");
 
   const videosSection = creator.videos
-    .slice(0, 15) // até 15 vídeos pra evitar context overflow
+    .slice(0, 15)
     .map((v, i) => {
       const lines = [
         `## Vídeo ${i + 1}${v.is_tiktok_shop ? " [TikTok Shop]" : ""}`,
@@ -103,18 +114,47 @@ function buildUserMessage(
       if (v.caption) lines.push(`Caption: ${v.caption.slice(0, 400)}`);
       if (v.transcript)
         lines.push(`Transcript: ${v.transcript.slice(0, 1500)}`);
+      if (v.visual_analysis) {
+        const va = v.visual_analysis;
+        const visualBits = [
+          va.paleta?.length ? `paleta: ${va.paleta.join(", ")}` : null,
+          va.iluminacao ? `iluminação: ${va.iluminacao}` : null,
+          va.cenario ? `cenário: ${va.cenario}` : null,
+          va.vibe ? `vibe: ${va.vibe}` : null,
+          va.production_quality_score !== undefined
+            ? `produção: ${va.production_quality_score}/100`
+            : null,
+          va.luxo?.length ? `sinais luxo: ${va.luxo.join(", ")}` : null,
+          va.anti_luxo?.length
+            ? `sinais anti-luxo: ${va.anti_luxo.join(", ")}`
+            : null,
+          va.summary ? `resumo visual: ${va.summary}` : null,
+        ].filter(Boolean);
+        if (visualBits.length > 0) {
+          lines.push(`Análise visual (Gemini): ${visualBits.join(" · ")}`);
+        }
+      }
       return lines.join("\n");
     })
     .join("\n\n");
 
+  const exemplaresLine =
+    creator.exemplar_handles_sim.length > 0
+      ? [
+          `**CALIBRAÇÃO — exemplares "sim" do time L'Oréal**: as seguintes afiliadas foram classificadas como "SIM" (encaixa em luxo) pelo curador humano: ${creator.exemplar_handles_sim.map((h) => `@${h}`).join(", ")}. Use esses perfis como ÂNCORA — se a afiliada que você está avaliando tem padrão estético/tom/portfólio comparável a um desses, deve receber score alto. **A régua é a deles, NÃO a teoria abstrata de luxo.** Não rejeite só porque o transcript fala "manchinha" ou "espinhazinha" — se o visual e o cenário batem, vale aprovar.`,
+          ``,
+        ]
+      : [];
+
   return [
     `Avalie a afiliada abaixo contra a Brand Constitution de **${brandName}**.`,
     ``,
-    `**IMPORTANTE — calibração**: este produto serve à L'Oréal Luxe, que tem régua MUITO restritiva. Em referência humana real, apenas ~6% das afiliadas analisadas foram classificadas como "sim" pra luxo. A maioria é "não". Seja CRITERIOSO, não permissivo. Aprove só quando a evidência for clara e consistente.`,
+    ...exemplaresLine,
+    `**Importante sobre o input**: você recebe (1) transcripts do que ela fala, (2) captions, (3) métricas de venda E (4) ANÁLISE VISUAL do Gemini quando disponível. **Priorize a análise visual** quando presente — o "luxo" se manifesta primeiro no visual, não no texto. Uma afiliada pode falar "manchinha" mas ter estética sofisticada — e isso é OK.`,
     ``,
     profileSection,
     ``,
-    `# Últimos vídeos`,
+    `# Vídeos`,
     videosSection || "(sem vídeos disponíveis)",
     ``,
     `Devolva sua análise usando a tool save_luxo_fit_score.`,

@@ -78,7 +78,7 @@ export async function POST(
     .eq("id", assignmentId);
 
   try {
-    // Carrega vídeos + transcripts (top 15 mais vistos)
+    // Carrega vídeos + transcripts + análise visual (top 15 mais vistos)
     const { data: videos } = await admin
       .from("videos")
       .select(
@@ -89,13 +89,28 @@ export async function POST(
       .limit(15);
 
     const videoIds = (videos ?? []).map((v) => v.id);
-    const { data: transcripts } = await admin
-      .from("transcripts")
-      .select("video_id, full_text")
-      .in("video_id", videoIds);
+
+    const [{ data: transcripts }, { data: visualAnalyses }, { data: exemplares }] =
+      await Promise.all([
+        admin
+          .from("transcripts")
+          .select("video_id, full_text")
+          .in("video_id", videoIds),
+        admin
+          .from("visual_analyses")
+          .select("video_id, detected_elements, production_quality_score, visual_summary")
+          .in("video_id", videoIds),
+        admin
+          .from("creators")
+          .select("tiktok_handle")
+          .eq("loreal_human_label_normalized", "sim"),
+      ]);
 
     const transcriptMap = new Map(
       (transcripts ?? []).map((t) => [t.video_id, t.full_text])
+    );
+    const visualMap = new Map(
+      (visualAnalyses ?? []).map((v) => [v.video_id, v])
     );
 
     const creatorContext: CreatorContextForJudgment = {
@@ -108,19 +123,46 @@ export async function POST(
       gmv_total_brl: creatorRow.gmv_total_brl,
       orders_total: creatorRow.orders_total,
       avg_ticket_brl: creatorRow.avg_ticket_brl,
-      videos: (videos ?? []).map((v) => ({
-        caption: v.caption,
-        hashtags: (v.hashtags as string[]) ?? [],
-        view_count: v.view_count,
-        like_count: v.like_count,
-        duration_seconds: v.duration_seconds,
-        posted_at: v.posted_at,
-        transcript: transcriptMap.get(v.id) ?? null,
-        is_tiktok_shop: Boolean(
-          (v.products_featured as { is_tiktok_shop?: boolean } | null)
-            ?.is_tiktok_shop
-        ),
-      })),
+      videos: (videos ?? []).map((v) => {
+        const va = visualMap.get(v.id);
+        const detected = (va?.detected_elements ?? null) as {
+          paleta?: string[];
+          iluminacao?: string;
+          cenario?: string;
+          vibe?: string;
+          luxo?: string[];
+          anti_luxo?: string[];
+        } | null;
+        return {
+          caption: v.caption,
+          hashtags: (v.hashtags as string[]) ?? [],
+          view_count: v.view_count,
+          like_count: v.like_count,
+          duration_seconds: v.duration_seconds,
+          posted_at: v.posted_at,
+          transcript: transcriptMap.get(v.id) ?? null,
+          is_tiktok_shop: Boolean(
+            (v.products_featured as { is_tiktok_shop?: boolean } | null)
+              ?.is_tiktok_shop
+          ),
+          visual_analysis: va
+            ? {
+                paleta: detected?.paleta,
+                iluminacao: detected?.iluminacao,
+                cenario: detected?.cenario,
+                vibe: detected?.vibe,
+                luxo: detected?.luxo,
+                anti_luxo: detected?.anti_luxo,
+                summary: va.visual_summary ?? undefined,
+                production_quality_score:
+                  va.production_quality_score ?? undefined,
+              }
+            : null,
+        };
+      }),
+      exemplar_handles_sim: (exemplares ?? [])
+        .map((e) => e.tiktok_handle)
+        .filter((h) => h !== creatorRow.tiktok_handle), // não vira referência de si mesmo
     };
 
     const judgment = await judgeCreatorForBrand(
