@@ -153,34 +153,35 @@ function isRetryableError(err: unknown): boolean {
   );
 }
 
+type MediaPart = { bytes: Buffer; mimeType: string };
+
 async function callGeminiOnce(
   ai: ReturnType<typeof getClient>,
   model: string,
-  videoBytes: Buffer,
-  mimeType: string
+  media: MediaPart[]
 ): Promise<{
   rawText: string;
   inputTokens: number;
   outputTokens: number;
 }> {
+  const parts = [
+    ...media.map((m) => ({
+      inlineData: {
+        mimeType: m.mimeType,
+        data: m.bytes.toString("base64"),
+      },
+    })),
+    {
+      text:
+        media.length > 1
+          ? `Analise a estética visual conjunta destas ${media.length} imagens (capas de vídeos TikTok da mesma afiliada) seguindo o schema. Foco apenas no visual (paleta, iluminação, cenário, produção, vibe). Identifique padrão CONSISTENTE entre os frames.`
+          : "Analise a estética visual desta imagem (capa de vídeo TikTok) seguindo o schema. Foco apenas no visual (paleta, iluminação, cenário, produção, vibe).",
+    },
+  ];
+
   const response = await ai.models.generateContent({
     model,
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            inlineData: {
-              mimeType,
-              data: videoBytes.toString("base64"),
-            },
-          },
-          {
-            text: "Analise a estética visual deste vídeo TikTok seguindo o schema. Foco apenas no visual (paleta, iluminação, cenário, produção, vibe). Não comente sobre áudio.",
-          },
-        ],
-      },
-    ],
+    contents: [{ role: "user", parts }],
     config: {
       systemInstruction: SYSTEM_INSTRUCTION,
       responseMimeType: "application/json",
@@ -200,15 +201,20 @@ async function callGeminiOnce(
   };
 }
 
-export async function analyzeVideoAesthetics(
-  videoBytes: Buffer,
-  mimeType: string = "video/mp4",
+/**
+ * Analisa estética a partir de 1+ imagens (capas/frames).
+ * Muito mais leve que vídeo — usa cover images do TikTok em vez de MP4.
+ */
+export async function analyzeImagesAesthetics(
+  images: MediaPart[],
   preferredModel: string = DEFAULT_MODEL
 ): Promise<GeminiAnalysisResult> {
   const ai = getClient();
 
-  // Constrói cadeia começando pelo preferido
-  const chain = [preferredModel, ...MODEL_FALLBACK_CHAIN.filter((m) => m !== preferredModel)];
+  const chain = [
+    preferredModel,
+    ...MODEL_FALLBACK_CHAIN.filter((m) => m !== preferredModel),
+  ];
 
   let lastError: unknown = null;
 
@@ -218,8 +224,7 @@ export async function analyzeVideoAesthetics(
         const { rawText, inputTokens, outputTokens } = await callGeminiOnce(
           ai,
           model,
-          videoBytes,
-          mimeType
+          images
         );
 
         let analysis: VideoAestheticAnalysis;

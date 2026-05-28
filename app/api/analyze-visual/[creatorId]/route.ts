@@ -1,15 +1,35 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getTikTokDownloadUrl, downloadVideoBytes } from "@/lib/services/tikwm";
-import { analyzeVideoAesthetics } from "@/lib/services/gemini";
+import { analyzeImagesAesthetics } from "@/lib/services/gemini";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// Top 1 vídeo só, pra caber no timeout de 60s do Vercel Hobby
-// (cada vídeo: ~5s download + ~15-25s Gemini = ~30s, sobra margem)
-const TOP_N_VIDEOS = 1;
+// Pega top 3 thumbnails. Mais leve que vídeo, cabe no timeout, e dá pra
+// inferir padrão estético consistente entre vários frames.
+const TOP_N_VIDEOS = 3;
+
+async function downloadImageBytes(
+  url: string
+): Promise<{ bytes: Buffer; mimeType: string }> {
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Download cover HTTP ${res.status}`);
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  // Sniff content-type (TikTok CDN às vezes não manda)
+  let mimeType = res.headers.get("content-type") ?? "image/jpeg";
+  if (mimeType.includes("text") || mimeType.includes("html")) {
+    mimeType = "image/jpeg"; // fallback
+  }
+  return { bytes: buf, mimeType };
+}
 
 /**
  * POST /api/analyze-visual/[creatorId]
@@ -49,11 +69,12 @@ export async function POST(
     );
   }
 
-  // Pega TOP 3 vídeos por views
+  // Pega TOP N vídeos com thumbnail
   const { data: videos } = await admin
     .from("videos")
-    .select("id, url, tiktok_video_id, view_count, duration_seconds")
+    .select("id, url, tiktok_video_id, view_count, thumbnail_url")
     .eq("creator_id", creator.id)
+    .not("thumbnail_url", "is", null)
     .order("view_count", { ascending: false, nullsFirst: false })
     .limit(TOP_N_VIDEOS);
 
@@ -61,93 +82,103 @@ export async function POST(
     return NextResponse.json({
       success: false,
       handle: creator.tiktok_handle,
-      error: "Sem vídeos pra analisar",
+      errors: ["Sem vídeos com thumbnail pra analisar"],
     });
   }
 
-  // Filtra vídeos que já têm análise
-  const videoIds = videos.map((v) => v.id);
-  const { data: existing } = await admin
-    .from("visual_analyses")
-    .select("video_id")
-    .in("video_id", videoIds);
+  // Baixa todas as thumbnails em paralelo
+  const downloads = await Promise.allSettled(
+    videos.map((v) => downloadImageBytes(v.thumbnail_url as string))
+  );
 
-  const existingSet = new Set((existing ?? []).map((a) => a.video_id));
-  const pending = videos.filter((v) => !existingSet.has(v.id));
+  const validMedia: Array<{ bytes: Buffer; mimeType: string; videoId: string }> = [];
+  const downloadErrors: string[] = [];
 
-  if (pending.length === 0) {
-    return NextResponse.json({
-      success: true,
-      handle: creator.tiktok_handle,
-      analyzed: 0,
-      message: "Top vídeos já analisados",
-    });
-  }
-
-  let succeeded = 0;
-  let failed = 0;
-  let totalCost = 0;
-  const errors: string[] = [];
-
-  for (const v of pending) {
-    try {
-      const { mp4Url, sizeBytes } = await getTikTokDownloadUrl(v.url);
-      if (sizeBytes > 18 * 1024 * 1024) {
-        errors.push(`${v.tiktok_video_id}: vídeo > 18MB`);
-        failed++;
-        continue;
-      }
-
-      const buffer = await downloadVideoBytes(mp4Url);
-      const result = await analyzeVideoAesthetics(buffer);
-      totalCost += result.cost_usd;
-
-      const { error: saveErr } = await admin.from("visual_analyses").upsert(
-        {
-          video_id: v.id,
-          model: result.model,
-          aesthetic_score:
-            result.analysis.brand_aesthetic_match.ysl_score >=
-            result.analysis.brand_aesthetic_match.lancome_score
-              ? result.analysis.brand_aesthetic_match.ysl_score
-              : result.analysis.brand_aesthetic_match.lancome_score,
-          production_quality_score: result.analysis.producao_quality_score,
-          visual_summary: result.analysis.summary,
-          detected_elements: {
-            paleta: result.analysis.paleta_dominante,
-            iluminacao: result.analysis.iluminacao,
-            cenario: result.analysis.cenario,
-            vibe: result.analysis.vibe,
-            luxo: result.analysis.elementos_luxo_detectados,
-            anti_luxo: result.analysis.elementos_anti_luxo_detectados,
-          },
-          brand_aesthetic_match: result.analysis.brand_aesthetic_match,
-          raw_response: result.raw_response,
-          cost_usd: result.cost_usd,
-        },
-        { onConflict: "video_id" }
+  for (let i = 0; i < downloads.length; i++) {
+    const d = downloads[i];
+    if (d.status === "fulfilled") {
+      validMedia.push({ ...d.value, videoId: videos[i].id });
+    } else {
+      downloadErrors.push(
+        `${videos[i].tiktok_video_id}: ${String(d.reason).slice(0, 100)}`
       );
-
-      if (saveErr) {
-        errors.push(`${v.tiktok_video_id}: DB ${saveErr.message}`);
-        failed++;
-      } else {
-        succeeded++;
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      errors.push(`${v.tiktok_video_id}: ${msg}`);
-      console.error(`[analyze-visual] ${creator.tiktok_handle}/${v.tiktok_video_id}:`, err);
-      failed++;
     }
   }
 
-  return NextResponse.json({
-    success: succeeded > 0,
-    handle: creator.tiktok_handle,
-    analyzed: succeeded,
-    failed,
-    cost_usd: totalCost,
-    errors,
-  });
+  if (validMedia.length === 0) {
+    return NextResponse.json({
+      success: false,
+      handle: creator.tiktok_handle,
+      errors: ["Nenhuma thumbnail baixou", ...downloadErrors],
+    });
+  }
+
+  // UMA única chamada Gemini com TODAS as thumbnails — análise conjunta
+  try {
+    const result = await analyzeImagesAesthetics(
+      validMedia.map((m) => ({ bytes: m.bytes, mimeType: m.mimeType }))
+    );
+
+    // Salva a mesma análise em todos os videos analisados juntos
+    const rows = validMedia.map((m) => ({
+      video_id: m.videoId,
+      model: result.model,
+      aesthetic_score: Math.max(
+        result.analysis.brand_aesthetic_match.ysl_score,
+        result.analysis.brand_aesthetic_match.lancome_score
+      ),
+      production_quality_score: result.analysis.producao_quality_score,
+      visual_summary: result.analysis.summary,
+      detected_elements: {
+        paleta: result.analysis.paleta_dominante,
+        iluminacao: result.analysis.iluminacao,
+        cenario: result.analysis.cenario,
+        vibe: result.analysis.vibe,
+        luxo: result.analysis.elementos_luxo_detectados,
+        anti_luxo: result.analysis.elementos_anti_luxo_detectados,
+      },
+      brand_aesthetic_match: result.analysis.brand_aesthetic_match,
+      raw_response: result.raw_response,
+      cost_usd: result.cost_usd / validMedia.length,
+    }));
+
+    const { error: saveErr } = await admin
+      .from("visual_analyses")
+      .upsert(rows, { onConflict: "video_id" });
+
+    if (saveErr) {
+      return NextResponse.json({
+        success: false,
+        handle: creator.tiktok_handle,
+        errors: [`DB save: ${saveErr.message}`, ...downloadErrors],
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      handle: creator.tiktok_handle,
+      analyzed: validMedia.length,
+      cost_usd: result.cost_usd,
+      model: result.model,
+      preview: {
+        paleta: result.analysis.paleta_dominante,
+        iluminacao: result.analysis.iluminacao,
+        vibe: result.analysis.vibe,
+        ysl_score: result.analysis.brand_aesthetic_match.ysl_score,
+        lancome_score: result.analysis.brand_aesthetic_match.lancome_score,
+      },
+      errors: downloadErrors,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[analyze-visual] ${creator.tiktok_handle}:`, err);
+    return NextResponse.json(
+      {
+        success: false,
+        handle: creator.tiktok_handle,
+        errors: [msg, ...downloadErrors],
+      },
+      { status: 500 }
+    );
+  }
 }
