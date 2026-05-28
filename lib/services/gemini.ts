@@ -131,9 +131,12 @@ function getPricing(model: string): { input: number; output: number } {
 // API CALL
 // ============================================================
 
-// Cadeia de fallback enxuta: principal + lite (mais robusto a overload)
-// Removido 3-flash-preview porque adicionava muita latência sem ganho real
-const MODEL_FALLBACK_CHAIN = [DEFAULT_MODEL, "gemini-2.5-flash-lite"];
+// Cadeia: principal → lite (mais resiliente) → 3-flash-preview (mais novo, menos congestionado)
+const MODEL_FALLBACK_CHAIN = [
+  DEFAULT_MODEL,
+  "gemini-2.5-flash-lite",
+  "gemini-3-flash-preview",
+];
 
 const RETRY_DELAYS_MS = [1500]; // 1 retry rápido por modelo só
 
