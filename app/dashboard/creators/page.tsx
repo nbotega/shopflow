@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { EnrichButton } from "@/components/enrich-button";
+import { VisualButton } from "@/components/visual-button";
 import { BatchEnrichButton } from "@/components/batch-enrich-button";
 import { BatchTranscribeButton } from "@/components/batch-transcribe-button";
 import { BatchJudgeButton } from "@/components/batch-judge-button";
@@ -198,12 +199,18 @@ export default async function CreatorsPage() {
                   <td className="px-4 py-3">
                     {statusBadge(c.enrichment_status)}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <EnrichButton
-                      creatorId={c.id}
-                      handle={c.tiktok_handle}
-                      status={c.enrichment_status}
-                    />
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1">
+                      <VisualButton
+                        creatorId={c.id}
+                        enriched={c.enrichment_status === "enriched"}
+                      />
+                      <EnrichButton
+                        creatorId={c.id}
+                        handle={c.tiktok_handle}
+                        status={c.enrichment_status}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}
