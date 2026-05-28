@@ -258,7 +258,8 @@ export async function analyzeVideoAesthetics(
   }
 
   const msg = lastError instanceof Error ? lastError.message : String(lastError);
+  // Sem slice — quero ver erro completo no debug
   throw new Error(
-    `Gemini falhou após tentar [${chain.join(", ")}] com retries: ${msg.slice(0, 200)}`
+    `Gemini falhou após tentar [${chain.join(", ")}]: ${msg}`
   );
 }

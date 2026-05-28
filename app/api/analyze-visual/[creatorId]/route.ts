@@ -136,7 +136,8 @@ export async function POST(
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      errors.push(`${v.tiktok_video_id}: ${msg.slice(0, 100)}`);
+      errors.push(`${v.tiktok_video_id}: ${msg}`);
+      console.error(`[analyze-visual] ${creator.tiktok_handle}/${v.tiktok_video_id}:`, err);
       failed++;
     }
   }
