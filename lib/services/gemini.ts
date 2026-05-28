@@ -131,14 +131,11 @@ function getPricing(model: string): { input: number; output: number } {
 // API CALL
 // ============================================================
 
-// Cadeia de fallback: tenta o principal, depois lite, depois 3-flash-preview
-const MODEL_FALLBACK_CHAIN = [
-  DEFAULT_MODEL,
-  "gemini-2.5-flash-lite",
-  "gemini-3-flash-preview",
-];
+// Cadeia de fallback enxuta: principal + lite (mais robusto a overload)
+// Removido 3-flash-preview porque adicionava muita latência sem ganho real
+const MODEL_FALLBACK_CHAIN = [DEFAULT_MODEL, "gemini-2.5-flash-lite"];
 
-const RETRY_DELAYS_MS = [2000, 5000, 10000]; // backoff dentro de cada modelo
+const RETRY_DELAYS_MS = [1500]; // 1 retry rápido por modelo só
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

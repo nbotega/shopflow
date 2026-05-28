@@ -7,7 +7,9 @@ import { analyzeVideoAesthetics } from "@/lib/services/gemini";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const TOP_N_VIDEOS = 3;
+// Top 1 vídeo só, pra caber no timeout de 60s do Vercel Hobby
+// (cada vídeo: ~5s download + ~15-25s Gemini = ~30s, sobra margem)
+const TOP_N_VIDEOS = 1;
 
 /**
  * POST /api/analyze-visual/[creatorId]
