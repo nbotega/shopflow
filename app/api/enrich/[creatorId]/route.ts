@@ -57,7 +57,9 @@ export async function POST(
     .eq("id", creator.id);
 
   try {
-    const videos = await scrapeTikTokProfileVideos(creator.tiktok_handle, 20);
+    const rawVideos = await scrapeTikTokProfileVideos(creator.tiktok_handle, 20);
+    // Filtra vídeos sem id (algumas linhas do Apify vêm sem campo, quebrava o INSERT)
+    const videos = rawVideos.filter((v) => typeof v.id === "string" && v.id.length > 0);
 
     if (videos.length === 0) {
       await admin
