@@ -158,6 +158,48 @@ export async function getCreditsBalance(): Promise<{
 }
 
 // ============================================================
+// PROFILE
+// ============================================================
+
+export type SociavaultProfileResponse = {
+  success: boolean;
+  data: {
+    success: boolean;
+    user: {
+      id: string;
+      uniqueId: string;
+      nickname?: string;
+      avatarLarger?: string;
+      avatarMedium?: string;
+      avatarThumb?: string;
+      signature?: string;
+      verified?: boolean;
+      privateAccount?: boolean;
+      secUid?: string;
+      bioLink?: { link?: string };
+    };
+    stats: {
+      followerCount?: number;
+      followingCount?: number;
+      heart?: number;
+      heartCount?: number;
+      videoCount?: number;
+    };
+  };
+  credits_used: number;
+  endpoint: string;
+};
+
+export async function getTikTokProfile(
+  handle: string
+): Promise<SociavaultProfileResponse> {
+  return sociavaultGet<SociavaultProfileResponse>(
+    "/v1/scrape/tiktok/profile",
+    { handle }
+  );
+}
+
+// ============================================================
 // TRANSCRIPT
 // ============================================================
 

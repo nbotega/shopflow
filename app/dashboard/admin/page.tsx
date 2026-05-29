@@ -7,6 +7,7 @@ import { BatchEnrichButton } from "@/components/batch-enrich-button";
 import { BatchTranscribeButton } from "@/components/batch-transcribe-button";
 import { BatchVisualButton } from "@/components/batch-visual-button";
 import { BatchJudgeButton } from "@/components/batch-judge-button";
+import { BatchRefreshButton } from "@/components/batch-refresh-button";
 
 // Esta página é interna — só Nelson acessa. Não tá no nav principal.
 export default async function AdminPage() {
@@ -23,7 +24,7 @@ export default async function AdminPage() {
   const { data: creators } = await supabase
     .from("creators")
     .select(
-      "id, enrichment_status, transcripts_status"
+      "id, enrichment_status, transcripts_status, avatar_url"
     );
 
   const rows = creators ?? [];
@@ -38,6 +39,9 @@ export default async function AdminPage() {
     .map((r) => r.id);
   const enrichedIds = rows
     .filter((r) => r.enrichment_status === "enriched")
+    .map((r) => r.id);
+  const missingAvatar = rows
+    .filter((r) => !r.avatar_url)
     .map((r) => r.id);
 
   const { data: pendingAssignments } =
@@ -83,6 +87,15 @@ export default async function AdminPage() {
                 Pega bio, vídeos recentes e métricas de cada afiliada.
               </p>
               <BatchEnrichButton pendingIds={pendingEnrich} />
+            </div>
+            <div className="border border-border p-5 space-y-2">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                Avatares & métricas
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Atualiza foto, followers e bio direto do perfil público TikTok.
+              </p>
+              <BatchRefreshButton creatorIds={missingAvatar} />
             </div>
             <div className="border border-border p-5 space-y-2">
               <div className="text-xs uppercase tracking-wider text-muted-foreground">
