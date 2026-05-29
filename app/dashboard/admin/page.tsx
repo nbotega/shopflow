@@ -8,6 +8,7 @@ import { BatchTranscribeButton } from "@/components/batch-transcribe-button";
 import { BatchVisualButton } from "@/components/batch-visual-button";
 import { BatchJudgeButton } from "@/components/batch-judge-button";
 import { BatchRefreshButton } from "@/components/batch-refresh-button";
+import { BatchExtractBrandsButton } from "@/components/batch-extract-brands-button";
 
 // Esta página é interna — só Nelson acessa. Não tá no nav principal.
 export default async function AdminPage() {
@@ -43,6 +44,8 @@ export default async function AdminPage() {
   const missingAvatar = rows
     .filter((r) => !r.avatar_url)
     .map((r) => r.id);
+
+  const allCreatorIds = rows.map((r) => r.id);
 
   const { data: pendingAssignments } =
     enrichedIds.length > 0
@@ -125,6 +128,15 @@ export default async function AdminPage() {
               <BatchJudgeButton
                 assignmentIds={(pendingAssignments ?? []).map((a) => a.id)}
               />
+            </div>
+            <div className="border border-border p-5 space-y-2 md:col-span-2">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                Marcas vendidas & contato
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Extrai marcas mencionadas em captions/transcripts + telefone/email da bio. Custo zero.
+              </p>
+              <BatchExtractBrandsButton creatorIds={allCreatorIds} />
             </div>
           </div>
         </section>
