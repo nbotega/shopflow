@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { SiteHeader } from "@/components/site-header";
 import { CreatorAvatar } from "@/components/creator-avatar";
 import { HumanLabelBadge } from "@/components/score-badge";
+import { DeleteCreatorButton } from "@/components/delete-creator-button";
+import { createClient as createClientAuth } from "@/lib/supabase/server";
+
+const ADMIN_EMAILS = ["nelbotega@gmail.com"];
 
 type CreatorRow = {
   id: string;
@@ -17,6 +21,10 @@ type CreatorRow = {
 
 export default async function CreatorsPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAdmin = ADMIN_EMAILS.includes(user?.email ?? "");
 
   const { data: creators } = await supabase
     .from("creators")
@@ -48,11 +56,22 @@ export default async function CreatorsPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
           {rows.map((c) => (
-            <Link
+            <div
               key={c.id}
-              href={`/dashboard/creators/${c.id}`}
-              className="group flex items-start gap-4 hover:bg-accent/30 -mx-3 px-3 py-3 transition-colors"
+              className="group relative flex items-start gap-4 hover:bg-accent/30 -mx-3 px-3 py-3 transition-colors"
             >
+              {isAdmin && (
+                <div className="absolute top-2 right-2 z-10">
+                  <DeleteCreatorButton
+                    creatorId={c.id}
+                    handle={c.tiktok_handle}
+                  />
+                </div>
+              )}
+              <Link
+                href={`/dashboard/creators/${c.id}`}
+                className="flex items-start gap-4 flex-1 min-w-0"
+              >
               <CreatorAvatar
                 avatarUrl={c.avatar_url}
                 handle={c.tiktok_handle}
@@ -98,7 +117,8 @@ export default async function CreatorsPage() {
                   )}
                 </div>
               </div>
-            </Link>
+              </Link>
+            </div>
           ))}
           {rows.length === 0 && (
             <div className="col-span-full text-center py-20 text-muted-foreground text-sm">

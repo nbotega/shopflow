@@ -5,6 +5,9 @@ import { SiteHeader } from "@/components/site-header";
 import { ScoreBadge, HumanLabelBadge } from "@/components/score-badge";
 import { CreatorAvatar } from "@/components/creator-avatar";
 import { ContactActions } from "@/components/contact-actions";
+import { DeleteCreatorButton } from "@/components/delete-creator-button";
+
+const ADMIN_EMAILS = ["nelbotega@gmail.com"];
 
 const CRITERIA_LABELS: Record<string, string> = {
   tom_de_voz: "Tom de voz",
@@ -42,6 +45,10 @@ export default async function CreatorDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAdmin = ADMIN_EMAILS.includes(user?.email ?? "");
 
   const { data: creator } = await supabase
     .from("creators")
@@ -446,14 +453,21 @@ export default async function CreatorDetailPage({
             </section>
           )}
 
-          {/* Voltar */}
-          <div className="border-t border-border pt-8">
+          {/* Footer */}
+          <div className="border-t border-border pt-8 flex items-center justify-between">
             <Link
               href="/dashboard/creators"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider"
             >
               ← Todas afiliadas
             </Link>
+            {isAdmin && (
+              <DeleteCreatorButton
+                creatorId={creator.id}
+                handle={creator.tiktok_handle}
+                variant="text"
+              />
+            )}
           </div>
         </main>
       </div>
