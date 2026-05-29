@@ -6,6 +6,7 @@ import { ScoreBadge, HumanLabelBadge } from "@/components/score-badge";
 import { CreatorAvatar } from "@/components/creator-avatar";
 import { ContactActions } from "@/components/contact-actions";
 import { DeleteCreatorButton } from "@/components/delete-creator-button";
+import { AdminQuickActions } from "@/components/admin-quick-actions";
 
 const ADMIN_EMAILS = ["nelbotega@gmail.com"];
 
@@ -178,6 +179,7 @@ export default async function CreatorDetailPage({
                 phone={creator.contact_phone}
                 email={creator.contact_email}
               />
+              {isAdmin && <AdminQuickActions creatorId={creator.id} />}
             </div>
           </section>
 
