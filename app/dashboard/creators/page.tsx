@@ -30,6 +30,7 @@ export default async function CreatorsPage() {
     .select(
       "id, tiktok_handle, display_name, gmv_total_brl, orders_total, loreal_human_label_normalized, follower_count, avatar_url"
     )
+    .eq("is_visible", true)
     .order("gmv_total_brl", { ascending: false, nullsFirst: false });
 
   const rows = (creators ?? []) as CreatorRow[];

@@ -68,9 +68,10 @@ export default async function ScoresPage({
     .select(
       `id, luxo_fit_score, recommendation, justificativa_resumida,
        brand:brands!inner(name, slug),
-       creator:creators!inner(id, tiktok_handle, display_name, gmv_total_brl, loreal_human_label_normalized, avatar_url)`
+       creator:creators!inner(id, tiktok_handle, display_name, gmv_total_brl, loreal_human_label_normalized, avatar_url, is_visible)`
     )
     .eq("is_latest", true)
+    .eq("creator.is_visible", true)
     .order("luxo_fit_score", { ascending: false });
 
   if (selectedBrandSlug) {
@@ -86,8 +87,9 @@ export default async function ScoresPage({
   const counts = { approve: 0, monitor: 0, borderline: 0, reject: 0 };
   const { data: allScores } = await supabase
     .from("scores")
-    .select("recommendation, brand:brands!inner(slug)")
+    .select("recommendation, brand:brands!inner(slug), creator:creators!inner(is_visible)")
     .eq("is_latest", true)
+    .eq("creator.is_visible", true)
     .eq("brand.slug", selectedBrandSlug ?? "");
   for (const r of allScores ?? []) {
     if (r.recommendation in counts) {

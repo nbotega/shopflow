@@ -37,20 +37,23 @@ export default async function DashboardPage() {
     .from("scores")
     .select(
       `brand_id, recommendation, luxo_fit_score,
-       creator:creators!inner(id, tiktok_handle, display_name, avatar_url, gmv_total_brl)`
+       creator:creators!inner(id, tiktok_handle, display_name, avatar_url, gmv_total_brl, is_visible)`
     )
     .eq("is_latest", true)
+    .eq("creator.is_visible", true)
     .order("luxo_fit_score", { ascending: false });
 
   const scores = (scoresRaw ?? []) as ScoreRow[];
 
   const { count: poolCount } = await supabase
     .from("creators")
-    .select("id", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true })
+    .eq("is_visible", true);
 
   const { data: poolGMV } = await supabase
     .from("creators")
-    .select("gmv_total_brl");
+    .select("gmv_total_brl")
+    .eq("is_visible", true);
 
   const totalGMV =
     (poolGMV ?? []).reduce(
