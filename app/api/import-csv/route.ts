@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   const csvText = await file.text();
-  const { valid, skipped, total } = parseAffiliateCSV(csvText);
+  const { valid, skipped, duplicates, total } = parseAffiliateCSV(csvText);
 
   if (valid.length === 0) {
     return NextResponse.json(
@@ -47,6 +47,7 @@ export async function POST(request: Request) {
         error: "Nenhuma afiliada válida no CSV (filtro: GMV > 0 e handle TikTok)",
         total,
         skipped,
+        duplicates,
       },
       { status: 400 }
     );
@@ -158,6 +159,7 @@ export async function POST(request: Request) {
     run_id: run.id,
     csv_total_rows: total,
     csv_skipped: skipped,
+    csv_duplicates: duplicates,
     creators_imported: upsertedCreators?.length ?? 0,
     brands_assigned: brandsData.length,
     total_assignments: assignmentRows.length,

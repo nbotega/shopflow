@@ -110,10 +110,12 @@ export function normalizeLuxoLabel(
 /**
  * Processa o CSV bruto e retorna afiliadas válidas (com GMV > 0 e handle extraído).
  * Linhas com GMV=0 ou sem handle são descartadas (não são afiliadas vendendo).
+ * Dedupica por handle (mantém o primeiro com maior GMV).
  */
 export function parseAffiliateCSV(csvText: string): {
   valid: ParsedAffiliate[];
   skipped: number;
+  duplicates: number;
   total: number;
 } {
   const result = Papa.parse<AffiliateCSVRow>(csvText, {
@@ -121,8 +123,9 @@ export function parseAffiliateCSV(csvText: string): {
     skipEmptyLines: true,
   });
 
-  const valid: ParsedAffiliate[] = [];
+  const byHandle = new Map<string, ParsedAffiliate>();
   let skipped = 0;
+  let duplicates = 0;
 
   for (const row of result.data) {
     const url = row["TikTok creator homepage"]?.trim();
@@ -136,8 +139,7 @@ export function parseAffiliateCSV(csvText: string): {
     }
 
     const labelRaw = row["luxo?"]?.trim() || null;
-
-    valid.push({
+    const candidate: ParsedAffiliate = {
       tiktok_handle: handle,
       display_name: row["Creator name"]?.trim() || handle,
       gmv_total_brl: gmv,
@@ -147,8 +149,39 @@ export function parseAffiliateCSV(csvText: string): {
       loreal_human_label_normalized: labelRaw
         ? normalizeLuxoLabel(labelRaw)
         : null,
-    });
+    };
+
+    const existing = byHandle.get(handle);
+    if (existing) {
+      duplicates++;
+      // Mantém o de maior GMV (somando ou ficando com o maior)
+      const existingGMV = existing.gmv_total_brl ?? 0;
+      if ((candidate.gmv_total_brl ?? 0) > existingGMV) {
+        // Se a versão nova tem label e a antiga não, preserva label
+        if (!candidate.loreal_human_label && existing.loreal_human_label) {
+          candidate.loreal_human_label = existing.loreal_human_label;
+          candidate.loreal_human_label_normalized =
+            existing.loreal_human_label_normalized;
+        }
+        byHandle.set(handle, candidate);
+      } else {
+        // Se a antiga não tem label e a nova tem, atualiza label
+        if (!existing.loreal_human_label && candidate.loreal_human_label) {
+          existing.loreal_human_label = candidate.loreal_human_label;
+          existing.loreal_human_label_normalized =
+            candidate.loreal_human_label_normalized;
+        }
+      }
+      continue;
+    }
+
+    byHandle.set(handle, candidate);
   }
 
-  return { valid, skipped, total: result.data.length };
+  return {
+    valid: Array.from(byHandle.values()),
+    skipped,
+    duplicates,
+    total: result.data.length,
+  };
 }

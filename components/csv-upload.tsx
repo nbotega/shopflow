@@ -9,6 +9,7 @@ type ImportResult = {
   success: boolean;
   csv_total_rows?: number;
   csv_skipped?: number;
+  csv_duplicates?: number;
   creators_imported?: number;
   brands_assigned?: number;
   total_assignments?: number;
@@ -103,7 +104,8 @@ export function CSVUpload() {
               <p className="font-medium">
                 {result.creators_imported} afiliadas importadas (de{" "}
                 {result.csv_total_rows} linhas — {result.csv_skipped} pulada
-                {result.csv_skipped === 1 ? "" : "s"} por GMV=0 ou sem handle)
+                {result.csv_skipped === 1 ? "" : "s"} por GMV=0 ou sem handle
+                {result.csv_duplicates ? `, ${result.csv_duplicates} duplicada${result.csv_duplicates === 1 ? "" : "s"} consolidada${result.csv_duplicates === 1 ? "" : "s"}` : ""})
               </p>
               <p className="text-muted-foreground text-xs">
                 {result.total_assignments} análises criadas (
