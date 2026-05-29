@@ -5,31 +5,33 @@
 
 @layer base {
   :root {
-    --background: 36 30% 97%;
-    --foreground: 20 14% 8%;
-    --card: 0 0% 100%;
-    --card-foreground: 20 14% 8%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 20 14% 8%;
-    --primary: 20 14% 8%;
-    --primary-foreground: 36 30% 97%;
-    --secondary: 36 20% 93%;
-    --secondary-foreground: 20 14% 8%;
-    --muted: 36 20% 94%;
-    --muted-foreground: 25 10% 45%;
-    --accent: 36 35% 88%;
-    --accent-foreground: 20 14% 8%;
-    --destructive: 0 65% 45%;
+    /* Dark editorial — preto profundo + dourado champanhe */
+    --background: 0 0% 5%;
+    --foreground: 36 20% 96%;
+    --card: 0 0% 7%;
+    --card-foreground: 36 20% 96%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 36 20% 96%;
+    --primary: 36 60% 65%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 36 20% 96%;
+    --muted: 0 0% 11%;
+    --muted-foreground: 36 8% 60%;
+    --accent: 36 35% 18%;
+    --accent-foreground: 36 60% 80%;
+    --destructive: 0 75% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 30 15% 88%;
-    --input: 30 15% 88%;
-    --ring: 20 14% 8%;
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 36 60% 65%;
     --radius: 0.25rem;
-    /* Brand color customizável por cliente (white-label) */
-    --brand: 36 50% 50%;
-    --brand-foreground: 0 0% 98%;
-    /* Gold accent sutil — toques editoriais */
-    --gold: 36 65% 52%;
+    --brand: 36 60% 65%;
+    --brand-foreground: 0 0% 5%;
+    --gold: 36 60% 65%;
+    /* gradients */
+    --grad-1: radial-gradient(circle at 20% 10%, hsl(36 60% 14% / 0.6), transparent 50%);
+    --grad-2: radial-gradient(circle at 80% 80%, hsl(36 60% 10% / 0.5), transparent 60%);
   }
 }
 
@@ -73,4 +75,27 @@
     );
     height: 1px;
   }
+  .ambient-bg {
+    background:
+      radial-gradient(circle at 15% 0%, hsl(36 70% 18% / 0.35), transparent 45%),
+      radial-gradient(circle at 85% 90%, hsl(36 70% 12% / 0.3), transparent 55%),
+      hsl(var(--background));
+  }
+  .card-glass {
+    background: linear-gradient(
+      135deg,
+      hsl(0 0% 8% / 0.95),
+      hsl(0 0% 6% / 0.95)
+    );
+    border: 1px solid hsl(36 30% 20% / 0.3);
+    backdrop-filter: blur(20px);
+  }
+  .gold-text-gradient {
+    background: linear-gradient(135deg, hsl(36 70% 75%), hsl(36 60% 55%));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 }
