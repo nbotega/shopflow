@@ -9,43 +9,90 @@ export default function LoginPage({
   searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight">SHOPFLOW</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Curadoria de afiliadas TikTok Shop
+    <div className="min-h-screen grid lg:grid-cols-2">
+      {/* Hero editorial */}
+      <div className="hidden lg:flex flex-col justify-between p-12 bg-foreground text-background">
+        <div>
+          <div className="font-display text-3xl tracking-tighter">
+            SHOPFLOW
+          </div>
+          <div className="text-[10px] uppercase tracking-[0.3em] mt-1 opacity-60">
+            Curadoria de afiliadas
+          </div>
+        </div>
+        <div className="space-y-4">
+          <h1 className="font-display text-5xl leading-[1.05] tracking-tight">
+            A curadoria que sua marca de luxo merece.
+          </h1>
+          <p className="text-sm opacity-70 max-w-md leading-relaxed">
+            Plataforma editorial para selecionar, monitorar e ativar afiliadas
+            do TikTok Shop alinhadas com a persona de cada marca premium.
           </p>
         </div>
+        <div className="text-[10px] uppercase tracking-[0.3em] opacity-40">
+          Confidencial · Snack Content
+        </div>
+      </div>
 
-        <form className="space-y-4" action={login}>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="seu@email.com"
-              required
-              autoComplete="email"
-            />
+      {/* Login form */}
+      <div className="flex items-center justify-center p-8 lg:p-16 bg-background">
+        <div className="w-full max-w-sm space-y-10">
+          <div className="lg:hidden text-center">
+            <div className="font-display text-3xl tracking-tighter">
+              SHOPFLOW
+            </div>
+            <div className="text-[10px] uppercase tracking-[0.3em] mt-1 text-muted-foreground">
+              Curadoria
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoComplete="current-password"
-            />
-          </div>
-          <Button type="submit" className="w-full">
-            Entrar
-          </Button>
-        </form>
 
-        <LoginMessage searchParams={searchParams} />
+          <div>
+            <h2 className="font-display text-3xl">Entrar</h2>
+            <p className="text-sm text-muted-foreground mt-2">
+              Acesse com as credenciais fornecidas pela equipe.
+            </p>
+          </div>
+
+          <form className="space-y-5" action={login}>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-xs uppercase tracking-wider">
+                Email
+              </Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                className="h-11 rounded-none border-x-0 border-t-0 border-b focus-visible:ring-0 focus-visible:border-foreground px-0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="password"
+                className="text-xs uppercase tracking-wider"
+              >
+                Senha
+              </Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                className="h-11 rounded-none border-x-0 border-t-0 border-b focus-visible:ring-0 focus-visible:border-foreground px-0"
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full h-11 rounded-none uppercase tracking-[0.15em] text-xs"
+            >
+              Acessar plataforma
+            </Button>
+          </form>
+
+          <LoginMessage searchParams={searchParams} />
+        </div>
       </div>
     </div>
   );
@@ -59,12 +106,12 @@ async function LoginMessage({
   const params = await searchParams;
   if (params.error) {
     return (
-      <p className="text-sm text-destructive text-center">{params.error}</p>
+      <p className="text-xs text-destructive text-center">{params.error}</p>
     );
   }
   if (params.message) {
     return (
-      <p className="text-sm text-muted-foreground text-center">
+      <p className="text-xs text-muted-foreground text-center">
         {params.message}
       </p>
     );

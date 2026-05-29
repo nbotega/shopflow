@@ -1,8 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
+import { SiteHeader } from "@/components/site-header";
 import { ScoreBadge, HumanLabelBadge } from "@/components/score-badge";
+import { CreatorAvatar } from "@/components/creator-avatar";
+
+const CRITERIA_LABELS: Record<string, string> = {
+  tom_de_voz: "Tom de voz",
+  estetica_visual: "Estética visual",
+  vocabulario_de_beleza: "Vocabulário de beleza",
+  qualidade_de_producao: "Qualidade de produção",
+  compatibilidade_de_portfolio: "Compatibilidade de portfólio",
+  consistencia_com_persona_marca: "Consistência com persona",
+};
 
 export default async function CreatorDetailPage({
   params,
@@ -15,7 +25,7 @@ export default async function CreatorDetailPage({
   const { data: creator } = await supabase
     .from("creators")
     .select(
-      "id, tiktok_handle, display_name, bio, follower_count, total_likes, verified, gmv_total_brl, orders_total, avg_ticket_brl, loreal_human_label, loreal_human_label_normalized, enrichment_status, transcripts_status, avatar_url"
+      "id, tiktok_handle, display_name, bio, follower_count, total_likes, verified, gmv_total_brl, orders_total, avg_ticket_brl, loreal_human_label, loreal_human_label_normalized, avatar_url"
     )
     .eq("id", id)
     .single();
@@ -25,7 +35,7 @@ export default async function CreatorDetailPage({
   const { data: scores } = await supabase
     .from("scores")
     .select(
-      "luxo_fit_score, recommendation, justificativa_resumida, scores_by_criteria, evidencias, red_flags, sugestao_acao, claude_model, cost_usd, brand:brands(name)"
+      "luxo_fit_score, recommendation, justificativa_resumida, scores_by_criteria, evidencias, red_flags, sugestao_acao, brand:brands(name, slug)"
     )
     .eq("creator_id", id)
     .eq("is_latest", true);
@@ -37,7 +47,7 @@ export default async function CreatorDetailPage({
     )
     .eq("creator_id", id)
     .order("view_count", { ascending: false, nullsFirst: false })
-    .limit(10);
+    .limit(6);
 
   const videoIds = (videos ?? []).map((v) => v.id);
   const [{ data: transcripts }, { data: visualAnalyses }] = await Promise.all([
@@ -46,12 +56,14 @@ export default async function CreatorDetailPage({
           .from("transcripts")
           .select("video_id, full_text")
           .in("video_id", videoIds)
-      : Promise.resolve({ data: [] as { video_id: string; full_text: string }[] }),
+      : Promise.resolve({
+          data: [] as { video_id: string; full_text: string }[],
+        }),
     videoIds.length > 0
       ? supabase
           .from("visual_analyses")
           .select(
-            "video_id, detected_elements, production_quality_score, visual_summary, brand_aesthetic_match"
+            "video_id, detected_elements, production_quality_score, visual_summary"
           )
           .in("video_id", videoIds)
       : Promise.resolve({
@@ -60,7 +72,6 @@ export default async function CreatorDetailPage({
             detected_elements: Record<string, unknown> | null;
             production_quality_score: number | null;
             visual_summary: string | null;
-            brand_aesthetic_match: Record<string, unknown> | null;
           }>,
         }),
   ]);
@@ -73,292 +84,271 @@ export default async function CreatorDetailPage({
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard/creators"
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              ← Afiliadas
-            </Link>
-          </div>
-          <Button variant="outline" size="sm" asChild>
-            <a
-              href={`https://www.tiktok.com/@${creator.tiktok_handle}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Ver no TikTok ↗
-            </a>
-          </Button>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-10">
+    <>
+      <SiteHeader active="afiliadas" />
+      <main className="max-w-5xl mx-auto px-6 py-12 space-y-16">
         {/* Hero */}
-        <section className="flex items-start gap-6">
-          {creator.avatar_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={creator.avatar_url}
-              alt={creator.tiktok_handle}
-              className="w-20 h-20 rounded-full border"
-            />
-          )}
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold tracking-tight">
+        <section className="flex flex-col md:flex-row items-start gap-8">
+          <CreatorAvatar
+            avatarUrl={creator.avatar_url}
+            handle={creator.tiktok_handle}
+            displayName={creator.display_name}
+            size="xl"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                Afiliada
+              </div>
+              <HumanLabelBadge
+                label={creator.loreal_human_label_normalized}
+              />
+              {creator.verified && (
+                <span className="text-[10px] uppercase tracking-wider text-gold">
+                  ✓ Verificada
+                </span>
+              )}
+            </div>
+            <h1 className="font-display text-5xl tracking-tighter leading-none">
               {creator.display_name ?? creator.tiktok_handle}
             </h1>
-            <p className="text-muted-foreground font-mono text-sm">
-              @{creator.tiktok_handle}
-              {creator.verified && " · verificada"}
-            </p>
+            <div className="text-sm text-muted-foreground font-mono mt-2">
+              <a
+                href={`https://www.tiktok.com/@${creator.tiktok_handle}`}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-foreground transition-colors"
+              >
+                @{creator.tiktok_handle} ↗
+              </a>
+            </div>
             {creator.bio && (
-              <p className="text-sm mt-2 text-muted-foreground max-w-prose">
-                {creator.bio}
+              <p className="text-sm mt-5 text-muted-foreground max-w-lg leading-relaxed italic">
+                &ldquo;{creator.bio}&rdquo;
               </p>
             )}
-            <div className="flex flex-wrap gap-6 mt-4 text-sm">
-              <div>
-                <div className="text-xs text-muted-foreground">GMV total</div>
-                <div className="font-semibold tabular-nums">
-                  {creator.gmv_total_brl
-                    ? `R$ ${Number(creator.gmv_total_brl).toLocaleString("pt-BR")}`
-                    : "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Pedidos</div>
-                <div className="font-semibold tabular-nums">
-                  {creator.orders_total ?? "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Followers</div>
-                <div className="font-semibold tabular-nums">
-                  {creator.follower_count?.toLocaleString("pt-BR") ?? "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  Label humano L&apos;Oréal
-                </div>
-                <div className="mt-1 flex items-center gap-2">
-                  <HumanLabelBadge
-                    label={creator.loreal_human_label_normalized}
-                  />
-                  {creator.loreal_human_label && (
-                    <span className="text-[10px] text-muted-foreground">
-                      &quot;{creator.loreal_human_label}&quot;
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
-        {/* Scores por brand */}
-        <section className="space-y-3">
-          <h2 className="text-xl font-bold tracking-tight">Avaliações IA</h2>
+        {/* Métricas comerciais */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-10 py-8 border-y border-border">
+          {[
+            {
+              label: "Vendas",
+              value: creator.gmv_total_brl
+                ? `R$ ${Number(creator.gmv_total_brl).toLocaleString("pt-BR")}`
+                : "—",
+            },
+            {
+              label: "Pedidos",
+              value: creator.orders_total?.toLocaleString("pt-BR") ?? "—",
+            },
+            {
+              label: "Ticket médio",
+              value: creator.avg_ticket_brl
+                ? `R$ ${Number(creator.avg_ticket_brl).toLocaleString("pt-BR")}`
+                : "—",
+            },
+            {
+              label: "Seguidores",
+              value: creator.follower_count?.toLocaleString("pt-BR") ?? "—",
+            },
+          ].map((m) => (
+            <div key={m.label}>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">
+                {m.label}
+              </div>
+              <div className="font-display text-2xl tabular-nums">
+                {m.value}
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* Avaliações por marca */}
+        <section className="space-y-6">
+          <h2 className="font-display text-3xl tracking-tight">Curadoria</h2>
           {(scores ?? []).length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              Ainda não foi julgada por nenhuma marca.
+              Ainda não avaliada.
             </p>
           ) : (
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-6">
               {(scores ?? []).map((s, i) => {
                 const brandName = Array.isArray(s.brand)
                   ? s.brand[0]?.name
                   : (s.brand as { name?: string } | null)?.name ?? "—";
-                const criteria = (s.scores_by_criteria ?? {}) as Record<string, number>;
+                const criteria = (s.scores_by_criteria ?? {}) as Record<
+                  string,
+                  number
+                >;
+                const redFlags = (s.red_flags as string[]) ?? [];
                 return (
-                  <div key={i} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <h3 className="font-bold">{brandName}</h3>
+                  <article
+                    key={i}
+                    className="border border-border bg-card p-8 space-y-6"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-1">
+                          L&apos;Oréal Luxe
+                        </div>
+                        <h3 className="font-display text-3xl tracking-tight">
+                          {brandName}
+                        </h3>
+                      </div>
                       <ScoreBadge
                         score={s.luxo_fit_score}
                         recommendation={s.recommendation}
+                        size="lg"
                       />
                     </div>
-                    <p className="text-sm text-muted-foreground">
+
+                    <p className="text-sm leading-relaxed">
                       {s.justificativa_resumida}
                     </p>
+
                     {/* Sub-scores */}
-                    <div className="space-y-1.5 text-xs">
+                    <div className="space-y-2 pt-2">
                       {Object.entries(criteria).map(([k, v]) => (
-                        <div key={k} className="flex items-center gap-2">
-                          <span className="w-44 text-muted-foreground">
-                            {k.replace(/_/g, " ")}
-                          </span>
-                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-foreground"
-                              style={{ width: `${v}%` }}
-                            />
+                        <div
+                          key={k}
+                          className="grid grid-cols-[1fr_auto] gap-3 items-center text-xs"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">
+                                {CRITERIA_LABELS[k] ?? k}
+                              </span>
+                              <span className="tabular-nums">{v}</span>
+                            </div>
+                            <div className="h-px bg-muted overflow-hidden">
+                              <div
+                                className="h-full bg-foreground"
+                                style={{ width: `${v}%`, height: "2px" }}
+                              />
+                            </div>
                           </div>
-                          <span className="w-8 text-right tabular-nums">
-                            {v}
-                          </span>
                         </div>
                       ))}
                     </div>
-                    {/* Red flags */}
-                    {(s.red_flags as string[])?.length > 0 && (
-                      <div className="text-xs bg-destructive/10 border border-destructive/30 rounded p-2 space-y-1">
-                        <div className="font-semibold text-destructive">
-                          Red flags
+
+                    {redFlags.length > 0 && (
+                      <div className="border-l-2 border-destructive/50 pl-3 py-1 space-y-1">
+                        <div className="text-[10px] uppercase tracking-[0.25em] text-destructive font-medium">
+                          Atenção
                         </div>
-                        <ul className="list-disc list-inside text-destructive/90">
-                          {(s.red_flags as string[]).map((f, idx) => (
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          {redFlags.map((f, idx) => (
                             <li key={idx}>{f}</li>
                           ))}
                         </ul>
                       </div>
                     )}
-                    {/* Evidências */}
+
+                    {s.sugestao_acao && (
+                      <div className="border-t border-border pt-4">
+                        <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">
+                          Recomendação
+                        </div>
+                        <p className="text-sm italic">{s.sugestao_acao}</p>
+                      </div>
+                    )}
+
                     {(s.evidencias as string[])?.length > 0 && (
                       <details className="text-xs">
-                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                          Ver {(s.evidencias as string[]).length} evidências
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground uppercase tracking-wider">
+                          Evidências
                         </summary>
-                        <ul className="list-disc list-inside mt-2 space-y-1 text-muted-foreground">
+                        <ul className="list-disc list-inside mt-3 space-y-2 text-muted-foreground">
                           {(s.evidencias as string[]).map((e, idx) => (
                             <li key={idx}>{e}</li>
                           ))}
                         </ul>
                       </details>
                     )}
-                    {/* Sugestão */}
-                    {s.sugestao_acao && (
-                      <div className="text-xs border-t pt-2 text-muted-foreground italic">
-                        💡 {s.sugestao_acao}
-                      </div>
-                    )}
-                  </div>
+                  </article>
                 );
               })}
             </div>
           )}
         </section>
 
-        {/* Vídeos com análise visual */}
-        <section className="space-y-3">
-          <h2 className="text-xl font-bold tracking-tight">
-            Top vídeos analisados
-          </h2>
-          <div className="space-y-3">
-            {(videos ?? []).map((v) => {
-              const va = visualMap.get(v.id);
-              const detected = (va?.detected_elements ?? null) as {
-                paleta?: string[];
-                iluminacao?: string;
-                cenario?: string;
-                vibe?: string;
-                luxo?: string[];
-                anti_luxo?: string[];
-              } | null;
-              const aesthetic = (va?.brand_aesthetic_match ?? null) as {
-                ysl_score?: number;
-                lancome_score?: number;
-              } | null;
-              return (
-                <div
-                  key={v.id}
-                  className="border rounded-lg p-4 flex gap-4 items-start"
-                >
-                  {v.thumbnail_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={v.thumbnail_url}
-                      alt=""
-                      className="w-20 h-28 object-cover rounded border"
-                    />
-                  )}
-                  <div className="flex-1 space-y-2 min-w-0">
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <a
-                        href={v.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="hover:underline"
-                      >
-                        ↗ Abrir TikTok
-                      </a>
-                      <span>
-                        {v.view_count?.toLocaleString("pt-BR") ?? "—"} views
-                      </span>
-                      <span>{v.duration_seconds ?? "?"}s</span>
-                      <span>{v.posted_at?.slice(0, 10) ?? "—"}</span>
-                    </div>
-                    {v.caption && (
-                      <p className="text-sm line-clamp-2">{v.caption}</p>
-                    )}
-                    {detected && (
-                      <div className="text-xs space-y-1 bg-muted/30 rounded p-2">
-                        {detected.paleta && (
-                          <div>
-                            <span className="text-muted-foreground">Paleta:</span>{" "}
-                            {detected.paleta.join(", ")}
-                          </div>
-                        )}
-                        {detected.iluminacao && (
-                          <div>
-                            <span className="text-muted-foreground">
-                              Iluminação:
-                            </span>{" "}
-                            {detected.iluminacao} ·{" "}
-                            <span className="text-muted-foreground">vibe:</span>{" "}
-                            {detected.vibe}
-                          </div>
-                        )}
-                        {va?.visual_summary && (
-                          <div className="text-muted-foreground italic">
-                            {va.visual_summary}
-                          </div>
-                        )}
-                        {aesthetic && (
-                          <div className="flex gap-3 pt-1">
-                            <span>
-                              YSL{" "}
-                              <span className="font-semibold">
-                                {aesthetic.ysl_score ?? "—"}
-                              </span>
-                            </span>
-                            <span>
-                              Lancôme{" "}
-                              <span className="font-semibold">
-                                {aesthetic.lancome_score ?? "—"}
-                              </span>
-                            </span>
-                          </div>
-                        )}
+        {/* Vídeos */}
+        {(videos ?? []).length > 0 && (
+          <section className="space-y-6">
+            <div className="flex items-end justify-between">
+              <h2 className="font-display text-3xl tracking-tight">
+                Conteúdo recente
+              </h2>
+              <div className="text-xs text-muted-foreground uppercase tracking-wider">
+                Top {videos?.length} por audiência
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              {(videos ?? []).map((v) => {
+                const va = visualMap.get(v.id);
+                const detected = (va?.detected_elements ?? null) as {
+                  paleta?: string[];
+                  iluminacao?: string;
+                  vibe?: string;
+                } | null;
+                return (
+                  <a
+                    key={v.id}
+                    href={v.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group block space-y-3"
+                  >
+                    <div className="aspect-[9/14] bg-muted overflow-hidden border border-border relative">
+                      {v.thumbnail_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={v.thumbnail_url}
+                          alt=""
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                          sem capa
+                        </div>
+                      )}
+                      <div className="absolute bottom-2 right-2 text-[10px] font-mono text-white bg-black/60 px-1.5 py-0.5">
+                        {v.view_count
+                          ? `${(v.view_count / 1000).toFixed(0)}k`
+                          : "—"}
                       </div>
-                    )}
-                    {transcriptMap.get(v.id) && (
-                      <details className="text-xs">
-                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                          Ver transcrição
-                        </summary>
-                        <p className="mt-1 text-muted-foreground whitespace-pre-wrap">
-                          {transcriptMap.get(v.id)}
+                    </div>
+                    <div className="space-y-1">
+                      {v.caption && (
+                        <p className="text-xs line-clamp-2 leading-relaxed">
+                          {v.caption}
                         </p>
-                      </details>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {(videos ?? []).length === 0 && (
-              <p className="text-muted-foreground text-sm">
-                Sem vídeos ainda. Rode o enriquecimento Apify.
-              </p>
-            )}
-          </div>
-        </section>
+                      )}
+                      {detected?.vibe && (
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider italic">
+                          {detected.vibe}
+                        </p>
+                      )}
+                      {transcriptMap.get(v.id) && (
+                        <details className="text-[10px] text-muted-foreground">
+                          <summary className="cursor-pointer hover:text-foreground">
+                            Transcrição
+                          </summary>
+                          <p className="mt-2 leading-relaxed whitespace-pre-wrap">
+                            {transcriptMap.get(v.id)?.slice(0, 800)}
+                          </p>
+                        </details>
+                      )}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </main>
-    </div>
+    </>
   );
 }

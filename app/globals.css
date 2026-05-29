@@ -1,32 +1,35 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Inter:wght@300;400;500;600;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 36 30% 97%;
+    --foreground: 20 14% 8%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 20 14% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 20 14% 8%;
+    --primary: 20 14% 8%;
+    --primary-foreground: 36 30% 97%;
+    --secondary: 36 20% 93%;
+    --secondary-foreground: 20 14% 8%;
+    --muted: 36 20% 94%;
+    --muted-foreground: 25 10% 45%;
+    --accent: 36 35% 88%;
+    --accent-foreground: 20 14% 8%;
+    --destructive: 0 65% 45%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
+    --border: 30 15% 88%;
+    --input: 30 15% 88%;
+    --ring: 20 14% 8%;
+    --radius: 0.25rem;
     /* Brand color customizável por cliente (white-label) */
-    --brand: 0 0% 9%;
+    --brand: 36 50% 50%;
     --brand-foreground: 0 0% 98%;
+    /* Gold accent sutil — toques editoriais */
+    --gold: 36 65% 52%;
   }
 }
 
@@ -36,6 +39,38 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+  }
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: "Playfair Display", Georgia, serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Playfair Display", Georgia, serif;
+    letter-spacing: -0.025em;
+  }
+  .text-gold {
+    color: hsl(var(--gold));
+  }
+  .bg-gold {
+    background-color: hsl(var(--gold));
+  }
+  .border-gold {
+    border-color: hsl(var(--gold));
+  }
+  .editorial-rule {
+    background: linear-gradient(
+      to right,
+      transparent,
+      hsl(var(--gold) / 0.4),
+      transparent
+    );
+    height: 1px;
   }
 }

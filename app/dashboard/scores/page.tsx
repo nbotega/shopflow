@@ -1,27 +1,49 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
+import { SiteHeader } from "@/components/site-header";
 import { ScoreBadge, HumanLabelBadge } from "@/components/score-badge";
+import { CreatorAvatar } from "@/components/creator-avatar";
 
 type ScoreRow = {
   id: string;
   luxo_fit_score: number;
   recommendation: string;
   justificativa_resumida: string;
-  brand: { name: string; slug: string } | { name: string; slug: string }[] | null;
-  creator: {
-    id: string;
-    tiktok_handle: string;
-    display_name: string | null;
-    gmv_total_brl: number | null;
-    loreal_human_label_normalized: string | null;
-  } | { id: string; tiktok_handle: string; display_name: string | null; gmv_total_brl: number | null; loreal_human_label_normalized: string | null }[] | null;
+  brand:
+    | { name: string; slug: string }
+    | { name: string; slug: string }[]
+    | null;
+  creator:
+    | {
+        id: string;
+        tiktok_handle: string;
+        display_name: string | null;
+        gmv_total_brl: number | null;
+        loreal_human_label_normalized: string | null;
+        avatar_url: string | null;
+      }
+    | {
+        id: string;
+        tiktok_handle: string;
+        display_name: string | null;
+        gmv_total_brl: number | null;
+        loreal_human_label_normalized: string | null;
+        avatar_url: string | null;
+      }[]
+    | null;
 };
 
 function flatten<T>(v: T | T[] | null): T | null {
   if (!v) return null;
   return Array.isArray(v) ? v[0] ?? null : v;
 }
+
+const REC_LABELS: Record<string, string> = {
+  approve: "Encaixam",
+  monitor: "Observar",
+  borderline: "Revisar",
+  reject: "Fora",
+};
 
 export default async function ScoresPage({
   searchParams,
@@ -39,13 +61,14 @@ export default async function ScoresPage({
 
   const selectedBrandSlug = params.brand ?? brands?.[0]?.slug;
   const selectedRec = params.rec ?? null;
+  const selectedBrand = (brands ?? []).find((b) => b.slug === selectedBrandSlug);
 
   let query = supabase
     .from("scores")
     .select(
       `id, luxo_fit_score, recommendation, justificativa_resumida,
        brand:brands!inner(name, slug),
-       creator:creators!inner(id, tiktok_handle, display_name, gmv_total_brl, loreal_human_label_normalized)`
+       creator:creators!inner(id, tiktok_handle, display_name, gmv_total_brl, loreal_human_label_normalized, avatar_url)`
     )
     .eq("is_latest", true)
     .order("luxo_fit_score", { ascending: false });
@@ -60,47 +83,50 @@ export default async function ScoresPage({
   const { data: scores } = await query;
   const rows = (scores ?? []) as ScoreRow[];
 
-  // Counts por recommendation
   const counts = { approve: 0, monitor: 0, borderline: 0, reject: 0 };
-  for (const r of rows) {
+  // recarrega sem filtro de rec pra contar todos
+  const { data: allScores } = await supabase
+    .from("scores")
+    .select("recommendation, brand:brands!inner(slug)")
+    .eq("is_latest", true)
+    .eq("brand.slug", selectedBrandSlug ?? "");
+  for (const r of allScores ?? []) {
     if (r.recommendation in counts) {
       counts[r.recommendation as keyof typeof counts]++;
     }
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <Link
-              href="/dashboard"
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              ← Dashboard
-            </Link>
-            <h1 className="text-2xl font-bold tracking-tight">
-              Ranking de afiliadas
-            </h1>
+    <>
+      <SiteHeader active="ranking" />
+      <main className="max-w-6xl mx-auto px-6 py-12 space-y-10">
+        {/* Hero */}
+        <section className="space-y-5">
+          <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+            Curadoria editorial
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/creators">Ver todas as afiliadas</Link>
-          </Button>
-        </div>
-      </header>
+          <h1 className="font-display text-5xl tracking-tighter">
+            {selectedBrand?.name ?? "Ranking"}
+          </h1>
+          <p className="text-sm text-muted-foreground max-w-xl">
+            Afiliadas avaliadas contra a régua editorial de {selectedBrand?.name}
+            , ordenadas por compatibilidade.
+          </p>
+        </section>
 
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
-        {/* Tabs de brand */}
-        <div className="flex gap-2 border-b">
+        <div className="editorial-rule" />
+
+        {/* Tabs de marcas */}
+        <nav className="flex gap-8 border-b border-border">
           {(brands ?? []).map((b) => {
             const active = b.slug === selectedBrandSlug;
             return (
               <Link
                 key={b.id}
-                href={`/dashboard/scores?brand=${b.slug}${selectedRec ? `&rec=${selectedRec}` : ""}`}
-                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+                href={`/dashboard/scores?brand=${b.slug}`}
+                className={`pb-3 -mb-px text-sm border-b-2 transition-colors ${
                   active
-                    ? "border-foreground text-foreground"
+                    ? "border-foreground text-foreground font-medium"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -108,16 +134,19 @@ export default async function ScoresPage({
               </Link>
             );
           })}
-        </div>
+        </nav>
 
-        {/* Filtros por recommendation */}
-        <div className="flex gap-2 text-xs">
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-2 text-xs">
           {[
-            { key: null, label: `Todas (${rows.length})` },
-            { key: "approve", label: `Aprovar (${counts.approve})` },
-            { key: "monitor", label: `Monitorar (${counts.monitor})` },
-            { key: "borderline", label: `Borderline (${counts.borderline})` },
-            { key: "reject", label: `Rejeitar (${counts.reject})` },
+            { key: null, label: `Todas · ${allScores?.length ?? 0}` },
+            { key: "approve", label: `${REC_LABELS.approve} · ${counts.approve}` },
+            { key: "monitor", label: `${REC_LABELS.monitor} · ${counts.monitor}` },
+            {
+              key: "borderline",
+              label: `${REC_LABELS.borderline} · ${counts.borderline}`,
+            },
+            { key: "reject", label: `${REC_LABELS.reject} · ${counts.reject}` },
           ].map((f) => {
             const active = (selectedRec ?? null) === f.key;
             const href = `/dashboard/scores?brand=${selectedBrandSlug}${f.key ? `&rec=${f.key}` : ""}`;
@@ -125,10 +154,10 @@ export default async function ScoresPage({
               <Link
                 key={f.key ?? "all"}
                 href={href}
-                className={`px-3 py-1 rounded border ${
+                className={`px-3 py-1.5 border uppercase tracking-wider transition-colors ${
                   active
-                    ? "bg-foreground text-background border-foreground"
-                    : "border-input text-muted-foreground hover:text-foreground"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
                 }`}
               >
                 {f.label}
@@ -137,77 +166,68 @@ export default async function ScoresPage({
           })}
         </div>
 
-        {/* Tabela */}
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30 border-b text-left">
-              <tr>
-                <th className="px-4 py-3 font-medium w-12">#</th>
-                <th className="px-4 py-3 font-medium">Decisão IA</th>
-                <th className="px-4 py-3 font-medium">@handle</th>
-                <th className="px-4 py-3 font-medium text-right">GMV</th>
-                <th className="px-4 py-3 font-medium">Humano</th>
-                <th className="px-4 py-3 font-medium">Justificativa</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => {
-                const c = flatten(r.creator);
-                if (!c) return null;
-                return (
-                  <tr key={r.id} className="border-b hover:bg-muted/20">
-                    <td className="px-4 py-3 text-muted-foreground tabular-nums">
-                      {i + 1}
-                    </td>
-                    <td className="px-4 py-3">
-                      <ScoreBadge
-                        score={r.luxo_fit_score}
-                        recommendation={r.recommendation}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/dashboard/creators/${c.id}`}
-                        className="font-mono text-xs hover:underline"
-                      >
-                        @{c.tiktok_handle}
-                      </Link>
-                      <div className="text-[10px] text-muted-foreground truncate max-w-[200px]">
-                        {c.display_name}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                      {c.gmv_total_brl
-                        ? `R$ ${Number(c.gmv_total_brl).toLocaleString("pt-BR")}`
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <HumanLabelBadge
-                        label={c.loreal_human_label_normalized}
-                      />
-                    </td>
-                    <td className="px-4 py-3 max-w-[450px] text-xs text-muted-foreground">
-                      <div className="line-clamp-2">
-                        {r.justificativa_resumida}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {rows.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-12 text-center text-muted-foreground"
-                  >
-                    Nenhum score ainda. Rode o pipeline pra começar.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        {/* Lista editorial */}
+        <div className="space-y-1">
+          {rows.map((r, i) => {
+            const c = flatten(r.creator);
+            if (!c) return null;
+            return (
+              <Link
+                key={r.id}
+                href={`/dashboard/creators/${c.id}`}
+                className="group grid grid-cols-[40px_60px_1fr_auto] md:grid-cols-[40px_60px_1fr_180px_auto] gap-6 items-center px-3 py-4 hover:bg-accent/40 transition-colors border-b border-border/40"
+              >
+                <span className="font-display text-xl text-muted-foreground tabular-nums">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <CreatorAvatar
+                  avatarUrl={c.avatar_url}
+                  handle={c.tiktok_handle}
+                  displayName={c.display_name}
+                  size="md"
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-xl tracking-tight truncate group-hover:underline underline-offset-4">
+                      {c.display_name ?? c.tiktok_handle}
+                    </span>
+                    <HumanLabelBadge
+                      label={c.loreal_human_label_normalized}
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground font-mono mt-0.5">
+                    @{c.tiktok_handle}
+                    {c.gmv_total_brl
+                      ? ` · R$ ${Number(c.gmv_total_brl).toLocaleString("pt-BR")} em vendas`
+                      : ""}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2 line-clamp-2 max-w-2xl hidden md:block">
+                    {r.justificativa_resumida}
+                  </p>
+                </div>
+                <div className="hidden md:flex justify-end">
+                  <ScoreBadge
+                    score={r.luxo_fit_score}
+                    recommendation={r.recommendation}
+                  />
+                </div>
+                <div className="md:hidden">
+                  <ScoreBadge
+                    score={r.luxo_fit_score}
+                    recommendation={r.recommendation}
+                    size="sm"
+                  />
+                </div>
+              </Link>
+            );
+          })}
+          {rows.length === 0 && (
+            <div className="py-20 text-center text-muted-foreground text-sm">
+              Nenhuma afiliada nessa categoria.
+            </div>
+          )}
         </div>
       </main>
-    </div>
+    </>
   );
 }
