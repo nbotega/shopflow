@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getTikTokProfile } from "@/lib/services/sociavault";
+import { scrapeTikTokProfile, normalizeProfile } from "@/lib/services/apify";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 /**
  * POST /api/refresh-profile/[creatorId]
- * Atualiza avatar + métricas do perfil via SociaVault.
- * Custo: 1 crédito por creator.
+ * Atualiza avatar + métricas via Apify clockworks/tiktok-profile-scraper.
+ * Custo: ~$0.0005 por creator.
  */
 export async function POST(
   request: Request,
@@ -42,38 +42,39 @@ export async function POST(
   }
 
   try {
-    const resp = await getTikTokProfile(creator.tiktok_handle);
-    const u = resp.data?.user;
-    const s = resp.data?.stats;
+    const profile = await scrapeTikTokProfile(creator.tiktok_handle);
 
-    if (!u) {
+    if (!profile) {
       return NextResponse.json({
         success: false,
         handle: creator.tiktok_handle,
-        error: "SociaVault não retornou user",
+        error: "Apify não retornou dados (perfil privado ou inexistente)",
       });
     }
+
+    const n = normalizeProfile(profile);
 
     await admin
       .from("creators")
       .update({
-        tiktok_user_id: u.id ?? null,
-        display_name: u.nickname ?? null,
-        bio: u.signature ?? null,
-        avatar_url: u.avatarLarger ?? u.avatarMedium ?? u.avatarThumb ?? null,
-        verified: Boolean(u.verified),
-        follower_count: s?.followerCount ?? null,
-        following_count: s?.followingCount ?? null,
-        total_likes: s?.heart ?? s?.heartCount ?? null,
+        tiktok_user_id: n.user_id,
+        display_name: n.display_name,
+        bio: n.bio,
+        avatar_url: n.avatar_url,
+        verified: n.verified,
+        follower_count: n.follower_count,
+        following_count: n.following_count,
+        total_likes: n.total_likes,
+        region: n.region,
       })
       .eq("id", creator.id);
 
     return NextResponse.json({
       success: true,
       handle: creator.tiktok_handle,
-      avatar: u.avatarLarger ?? u.avatarMedium ?? u.avatarThumb ?? null,
-      followers: s?.followerCount ?? null,
-      verified: Boolean(u.verified),
+      avatar: n.avatar_url,
+      followers: n.follower_count,
+      verified: n.verified,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
