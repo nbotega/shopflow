@@ -86,27 +86,27 @@ function buildUserMessage(
   creator: CreatorContextForJudgment
 ): string {
   const profileSection = [
-    `# Perfil da afiliada`,
+    `# Affiliate profile`,
     `Handle: @${creator.handle}`,
-    `Nome: ${creator.display_name ?? "—"}`,
+    `Name: ${creator.display_name ?? "—"}`,
     `Bio: ${creator.bio ?? "—"}`,
-    `Verificada: ${creator.verified ? "sim" : "não"}`,
-    `Followers: ${creator.follower_count?.toLocaleString("pt-BR") ?? "—"}`,
-    `Total likes: ${creator.total_likes?.toLocaleString("pt-BR") ?? "—"}`,
+    `Verified: ${creator.verified ? "yes" : "no"}`,
+    `Followers: ${creator.follower_count?.toLocaleString("en-US") ?? "—"}`,
+    `Total likes: ${creator.total_likes?.toLocaleString("en-US") ?? "—"}`,
     ``,
-    `# Performance TikTok Shop`,
-    `GMV total: ${creator.gmv_total_brl ? `R$ ${creator.gmv_total_brl.toLocaleString("pt-BR")}` : "—"}`,
-    `Pedidos: ${creator.orders_total ?? "—"}`,
-    `Ticket médio: ${creator.avg_ticket_brl ? `R$ ${creator.avg_ticket_brl.toLocaleString("pt-BR")}` : "—"}`,
+    `# TikTok Shop performance`,
+    `Total GMV: ${creator.gmv_total_brl ? `R$ ${creator.gmv_total_brl.toLocaleString("pt-BR")}` : "—"}`,
+    `Orders: ${creator.orders_total ?? "—"}`,
+    `Avg. ticket: ${creator.avg_ticket_brl ? `R$ ${creator.avg_ticket_brl.toLocaleString("pt-BR")}` : "—"}`,
   ].join("\n");
 
   const videosSection = creator.videos
     .slice(0, 15)
     .map((v, i) => {
       const lines = [
-        `## Vídeo ${i + 1}${v.is_tiktok_shop ? " [TikTok Shop]" : ""}`,
-        `Postado em: ${v.posted_at?.slice(0, 10) ?? "—"}`,
-        `Views: ${v.view_count?.toLocaleString("pt-BR") ?? "—"} · Likes: ${v.like_count?.toLocaleString("pt-BR") ?? "—"} · Duração: ${v.duration_seconds ?? "?"}s`,
+        `## Video ${i + 1}${v.is_tiktok_shop ? " [TikTok Shop]" : ""}`,
+        `Posted: ${v.posted_at?.slice(0, 10) ?? "—"}`,
+        `Views: ${v.view_count?.toLocaleString("en-US") ?? "—"} · Likes: ${v.like_count?.toLocaleString("en-US") ?? "—"} · Duration: ${v.duration_seconds ?? "?"}s`,
       ];
       if (v.hashtags.length > 0) {
         lines.push(`Hashtags: ${v.hashtags.map((h) => `#${h}`).join(" ")}`);
@@ -117,21 +117,21 @@ function buildUserMessage(
       if (v.visual_analysis) {
         const va = v.visual_analysis;
         const visualBits = [
-          va.paleta?.length ? `paleta: ${va.paleta.join(", ")}` : null,
-          va.iluminacao ? `iluminação: ${va.iluminacao}` : null,
-          va.cenario ? `cenário: ${va.cenario}` : null,
+          va.paleta?.length ? `palette: ${va.paleta.join(", ")}` : null,
+          va.iluminacao ? `lighting: ${va.iluminacao}` : null,
+          va.cenario ? `setting: ${va.cenario}` : null,
           va.vibe ? `vibe: ${va.vibe}` : null,
           va.production_quality_score !== undefined
-            ? `produção: ${va.production_quality_score}/100`
+            ? `production: ${va.production_quality_score}/100`
             : null,
-          va.luxo?.length ? `sinais luxo: ${va.luxo.join(", ")}` : null,
+          va.luxo?.length ? `luxury signals: ${va.luxo.join(", ")}` : null,
           va.anti_luxo?.length
-            ? `sinais anti-luxo: ${va.anti_luxo.join(", ")}`
+            ? `anti-luxury signals: ${va.anti_luxo.join(", ")}`
             : null,
-          va.summary ? `resumo visual: ${va.summary}` : null,
+          va.summary ? `visual summary: ${va.summary}` : null,
         ].filter(Boolean);
         if (visualBits.length > 0) {
-          lines.push(`Análise visual (Gemini): ${visualBits.join(" · ")}`);
+          lines.push(`Visual analysis (Gemini): ${visualBits.join(" · ")}`);
         }
       }
       return lines.join("\n");
@@ -141,23 +141,25 @@ function buildUserMessage(
   const exemplaresLine =
     creator.exemplar_handles_sim.length > 0
       ? [
-          `**CALIBRAÇÃO — exemplares "sim" do time L'Oréal**: as seguintes afiliadas foram classificadas como "SIM" (encaixa em luxo) pelo curador humano: ${creator.exemplar_handles_sim.map((h) => `@${h}`).join(", ")}. Use esses perfis como ÂNCORA — se a afiliada que você está avaliando tem padrão estético/tom/portfólio comparável a um desses, deve receber score alto. **A régua é a deles, NÃO a teoria abstrata de luxo.** Não rejeite só porque o transcript fala "manchinha" ou "espinhazinha" — se o visual e o cenário batem, vale aprovar.`,
+          `**CALIBRATION — "approved" exemplars by L'Oréal team**: the following affiliates were classified as "ON BRAND" (luxury fit) by the human curator: ${creator.exemplar_handles_sim.map((h) => `@${h}`).join(", ")}. Use these profiles as ANCHORS — if the affiliate you're evaluating has an aesthetic/tone/portfolio comparable to any of them, give a high score. **The ruler is theirs, NOT abstract luxury theory.** Don't reject just because the transcript uses casual diminutives — if the visual and setting match, it's a yes.`,
           ``,
         ]
       : [];
 
   return [
-    `Avalie a afiliada abaixo contra a Brand Constitution de **${brandName}**.`,
+    `Evaluate the affiliate below against the Brand Constitution of **${brandName}**.`,
+    ``,
+    `**RESPOND IN ENGLISH.** Even though the Brand Constitution is written in Portuguese and the field names of the JSON output are in Portuguese (justificativa_resumida, evidencias, sugestao_acao, red_flags), the VALUES you write in those fields must be in fluent professional ENGLISH. This output goes to L'Oréal's global marketing team.`,
     ``,
     ...exemplaresLine,
-    `**Importante sobre o input**: você recebe (1) transcripts do que ela fala, (2) captions, (3) métricas de venda E (4) ANÁLISE VISUAL do Gemini quando disponível. **Priorize a análise visual** quando presente — o "luxo" se manifesta primeiro no visual, não no texto. Uma afiliada pode falar "manchinha" mas ter estética sofisticada — e isso é OK.`,
+    `**About the input**: you receive (1) transcripts of what she says, (2) captions, (3) sales metrics, AND (4) VISUAL ANALYSIS from Gemini when available. **Prioritize the visual analysis** when present — "luxury" manifests first in the visual, not in the text. An affiliate may speak casually ("manchinha", "espinhazinha") but have sophisticated aesthetics — and that's OK.`,
     ``,
     profileSection,
     ``,
-    `# Vídeos`,
-    videosSection || "(sem vídeos disponíveis)",
+    `# Videos`,
+    videosSection || "(no videos available)",
     ``,
-    `Devolva sua análise usando a tool save_luxo_fit_score.`,
+    `Return your analysis using the save_luxo_fit_score tool. Write all text values in English.`,
   ].join("\n");
 }
 
@@ -168,7 +170,7 @@ function buildUserMessage(
 const TOOL_DEFINITION: Anthropic.Tool = {
   name: "save_luxo_fit_score",
   description:
-    "Registra o Luxo Fit Score completo da afiliada pra essa marca específica.",
+    "Save the full Match Score for this affiliate against this specific brand. All text values must be in English.",
   input_schema: {
     type: "object",
     properties: {
@@ -176,30 +178,32 @@ const TOOL_DEFINITION: Anthropic.Tool = {
         type: "integer",
         minimum: 0,
         maximum: 100,
-        description: "Score final 0-100 do match da afiliada com a marca.",
+        description: "Final 0-100 score of affiliate fit against the brand.",
       },
       recommendation: {
         type: "string",
         enum: ["approve", "monitor", "borderline", "reject"],
         description:
-          "approve (≥80), monitor (60-79), borderline (40-59), reject (<40). Red flag → reject automático.",
+          "approve (≥80), monitor (60-79), borderline (40-59), reject (<40). Red flag → automatic reject.",
       },
       scores_by_criteria: {
         type: "object",
         properties: {
-          tom_de_voz: { type: "integer", minimum: 0, maximum: 100 },
-          estetica_visual: { type: "integer", minimum: 0, maximum: 100 },
-          vocabulario_de_beleza: { type: "integer", minimum: 0, maximum: 100 },
-          qualidade_de_producao: { type: "integer", minimum: 0, maximum: 100 },
+          tom_de_voz: { type: "integer", minimum: 0, maximum: 100, description: "Tone of voice (0-100)" },
+          estetica_visual: { type: "integer", minimum: 0, maximum: 100, description: "Visual aesthetics (0-100)" },
+          vocabulario_de_beleza: { type: "integer", minimum: 0, maximum: 100, description: "Beauty vocabulary (0-100)" },
+          qualidade_de_producao: { type: "integer", minimum: 0, maximum: 100, description: "Production quality (0-100)" },
           compatibilidade_de_portfolio: {
             type: "integer",
             minimum: 0,
             maximum: 100,
+            description: "Portfolio compatibility (0-100)",
           },
           consistencia_com_persona_marca: {
             type: "integer",
             minimum: 0,
             maximum: 100,
+            description: "Brand persona consistency (0-100)",
           },
         },
         required: [
@@ -214,24 +218,24 @@ const TOOL_DEFINITION: Anthropic.Tool = {
       justificativa_resumida: {
         type: "string",
         description:
-          "2-3 frases claras pra gestora L'Oréal entender o porquê do score.",
+          "IN ENGLISH. 2-3 clear sentences for the L'Oréal manager to understand the reasoning.",
       },
       evidencias: {
         type: "array",
         items: { type: "string" },
         description:
-          "2-5 trechos curtos (transcript, caption, observação visual) que sustentam o score.",
+          "IN ENGLISH. 2-5 short excerpts (transcript, caption, visual observation) supporting the score. Quote original Portuguese phrases when relevant but explain in English.",
       },
       red_flags: {
         type: "array",
         items: { type: "string" },
         description:
-          "Sinalizadores absolutos detectados (preconceito, promessa médica, política, etc). Vazio se nenhum.",
+          "IN ENGLISH. Absolute flags detected (bias, medical claims, politics, etc). Empty if none.",
       },
       sugestao_acao: {
         type: "string",
         description:
-          "Ação concreta sugerida ao time L'Oréal em 1 frase (ex: 'Aprovar e priorizar pra próximas campanhas YSL').",
+          "IN ENGLISH. Concrete action recommended to the L'Oréal team in 1 sentence (e.g. 'Approve and prioritize for upcoming YSL campaigns').",
       },
     },
     required: [
@@ -270,7 +274,13 @@ export async function judgeCreatorForBrand(
     max_tokens: 2048,
     tools: [TOOL_DEFINITION],
     tool_choice: { type: "tool", name: "save_luxo_fit_score" },
-    system: brandConstitution,
+    system: [
+      {
+        type: "text",
+        text: "You are a luxury-beauty editorial curator working for L'Oréal Luxe. **All your written output (justificativa_resumida, evidencias, red_flags, sugestao_acao) MUST be in fluent professional ENGLISH.** The Brand Constitution below is in Portuguese for internal calibration, but your output is consumed by L'Oréal's global team in English.",
+      },
+      { type: "text", text: brandConstitution },
+    ],
     messages: [
       {
         role: "user",
