@@ -240,6 +240,67 @@ function extractFirstUrl(
   return values[0] ?? null;
 }
 
+// ============================================================
+// DISCOVERY POR HASHTAG (clockworks/tiktok-scraper)
+// Usa o mesmo actor principal com input de hashtags
+// ============================================================
+
+const HASHTAG_ACTOR_ID = "clockworks~tiktok-scraper";
+
+/**
+ * Busca vídeos populares por hashtag e retorna lista de authors únicos.
+ * Útil pra descobrir afiliadas TikTok Shop BR ativas via hashtags como
+ * #tiktokshopbrasil, #shopcreator, #beautybrasil.
+ */
+export async function scrapeTikTokByHashtags(
+  hashtags: string[],
+  resultsPerPage: number = 60
+): Promise<ApifyTikTokVideo[]> {
+  const url = `${BASE_URL}/acts/${HASHTAG_ACTOR_ID}/run-sync-get-dataset-items?token=${getToken()}`;
+  const cleanHashtags = hashtags.map((h) => h.replace(/^#/, "").trim()).filter(Boolean);
+
+  const input = {
+    hashtags: cleanHashtags,
+    resultsPerPage,
+    shouldDownloadVideos: false,
+    shouldDownloadCovers: false,
+    shouldDownloadSubtitles: false,
+    proxyCountryCode: "BR",
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `Apify hashtag scraper falhou: ${res.status} ${res.statusText} — ${body.slice(0, 200)}`
+    );
+  }
+
+  const data = (await res.json()) as ApifyTikTokVideo[];
+  return Array.isArray(data) ? data : [];
+}
+
+/**
+ * Dedupica authors únicos a partir de uma lista de vídeos.
+ */
+export function extractUniqueAuthors(
+  videos: ApifyTikTokVideo[]
+): Map<string, ApifyTikTokAuthor> {
+  const map = new Map<string, ApifyTikTokAuthor>();
+  for (const v of videos) {
+    const a = v.authorMeta;
+    if (a?.uniqueId && !map.has(a.uniqueId)) {
+      map.set(a.uniqueId, a);
+    }
+  }
+  return map;
+}
+
 /**
  * Extrai hashtags como array de strings.
  */

@@ -9,6 +9,7 @@ import { BatchVisualButton } from "@/components/batch-visual-button";
 import { BatchJudgeButton } from "@/components/batch-judge-button";
 import { BatchRefreshButton } from "@/components/batch-refresh-button";
 import { BatchExtractBrandsButton } from "@/components/batch-extract-brands-button";
+import { DiscoverHashtagsForm } from "@/components/discover-hashtags-form";
 
 // Esta página é interna — só Nelson acessa. Não tá no nav principal.
 export default async function AdminPage() {
@@ -77,6 +78,17 @@ export default async function AdminPage() {
         <section className="space-y-3">
           <h2 className="font-display text-2xl">Ingestão</h2>
           <CSVUpload />
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="font-display text-2xl">Descoberta automática</h2>
+          <p className="text-sm text-muted-foreground">
+            Adiciona novas afiliadas ao pool buscando por hashtags ativas no
+            TikTok Shop BR. Custo varia conforme tamanho da varredura.
+          </p>
+          <div className="border border-border p-6">
+            <DiscoverHashtagsForm />
+          </div>
         </section>
 
         <section className="space-y-4">
