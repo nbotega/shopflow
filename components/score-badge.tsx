@@ -8,25 +8,25 @@ const STYLES: Record<
     bg: "bg-foreground",
     text: "text-background",
     ring: "ring-foreground/20",
-    label: "ENCAIXA",
+    label: "ON BRAND",
   },
   monitor: {
     bg: "bg-accent",
     text: "text-foreground",
     ring: "ring-accent",
-    label: "OBSERVAR",
+    label: "WATCH",
   },
   borderline: {
     bg: "bg-muted",
     text: "text-muted-foreground",
     ring: "ring-border",
-    label: "REVISAR",
+    label: "REVIEW",
   },
   reject: {
     bg: "bg-muted/50",
     text: "text-muted-foreground/60",
     ring: "ring-border/40",
-    label: "FORA",
+    label: "OFF BRAND",
   },
 };
 
@@ -82,13 +82,13 @@ export function HumanLabelBadge({ label }: { label: string | null }) {
   if (label === "sim")
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] rounded-full bg-foreground text-background uppercase tracking-wider font-medium">
-        Curadoria
+        Curated
       </span>
     );
   if (label === "maybe")
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] rounded-full border border-foreground/30 uppercase tracking-wider">
-        Em análise
+        Pending review
       </span>
     );
   if (label === "nao") return null;

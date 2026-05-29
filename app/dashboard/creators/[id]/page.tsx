@@ -10,19 +10,19 @@ import { DeleteCreatorButton } from "@/components/delete-creator-button";
 const ADMIN_EMAILS = ["nelbotega@gmail.com"];
 
 const CRITERIA_LABELS: Record<string, string> = {
-  tom_de_voz: "Tom de voz",
-  estetica_visual: "Estética visual",
-  vocabulario_de_beleza: "Vocabulário de beleza",
-  qualidade_de_producao: "Qualidade de produção",
-  compatibilidade_de_portfolio: "Compatibilidade de portfólio",
-  consistencia_com_persona_marca: "Consistência com persona",
+  tom_de_voz: "Tone of voice",
+  estetica_visual: "Visual aesthetics",
+  vocabulario_de_beleza: "Beauty vocabulary",
+  qualidade_de_producao: "Production quality",
+  compatibilidade_de_portfolio: "Portfolio compatibility",
+  consistencia_com_persona_marca: "Brand persona consistency",
 };
 
 const TIER_STYLES: Record<string, { bg: string; label: string }> = {
-  luxo: { bg: "bg-gold/20 border-gold/40 text-gold", label: "Luxo" },
+  luxo: { bg: "bg-gold/20 border-gold/40 text-gold", label: "Luxury" },
   concorrente_loreal: {
     bg: "bg-destructive/15 border-destructive/40 text-destructive",
-    label: "Concorrente",
+    label: "Competitor",
   },
   premium: { bg: "bg-accent border-accent text-accent-foreground", label: "Premium" },
   massmarket: {
@@ -35,7 +35,7 @@ function fmtNum(n: number | null): string {
   if (n === null || n === undefined) return "—";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toLocaleString("pt-BR");
+  return n.toLocaleString("en-US");
 }
 
 export default async function CreatorDetailPage({
@@ -107,7 +107,6 @@ export default async function CreatorDetailPage({
     (visualAnalyses ?? []).map((v) => [v.video_id, v])
   );
 
-  // Engajamento médio
   const totalViews = (videos ?? []).reduce(
     (a, v) => a + (v.view_count ?? 0),
     0
@@ -142,14 +141,14 @@ export default async function CreatorDetailPage({
               <div>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="text-[10px] uppercase tracking-[0.3em] text-gold/80">
-                    Afiliada · TikTok Shop BR
+                    Affiliate · TikTok Shop Brazil
                   </div>
                   <HumanLabelBadge
                     label={creator.loreal_human_label_normalized}
                   />
                   {creator.verified && (
                     <span className="text-[10px] uppercase tracking-wider text-gold">
-                      ✓ Verificada
+                      ✓ Verified
                     </span>
                   )}
                 </div>
@@ -182,40 +181,40 @@ export default async function CreatorDetailPage({
             </div>
           </section>
 
-          {/* MÉTRICAS - cards visuais */}
+          {/* METRICS */}
           <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {[
               {
-                label: "Vendas TikTok",
+                label: "TikTok Sales",
                 value: creator.gmv_total_brl
                   ? `R$ ${Number(creator.gmv_total_brl).toLocaleString("pt-BR")}`
                   : "—",
-                hint: "GMV total",
+                hint: "Total GMV",
               },
               {
-                label: "Pedidos",
-                value: creator.orders_total?.toLocaleString("pt-BR") ?? "—",
-                hint: "no Shop",
+                label: "Orders",
+                value: creator.orders_total?.toLocaleString("en-US") ?? "—",
+                hint: "in the Shop",
               },
               {
-                label: "Ticket médio",
+                label: "Avg. ticket",
                 value: creator.avg_ticket_brl
                   ? `R$ ${Number(creator.avg_ticket_brl).toFixed(0)}`
                   : "—",
-                hint: "por pedido",
+                hint: "per order",
               },
               {
-                label: "Seguidores",
+                label: "Followers",
                 value: fmtNum(creator.follower_count),
                 hint: "TikTok",
               },
               {
-                label: "Curtidas",
+                label: "Likes",
                 value: fmtNum(creator.total_likes),
-                hint: "histórico",
+                hint: "lifetime",
               },
               {
-                label: "Engajamento",
+                label: "Engagement",
                 value: `${engagementRate}%`,
                 hint: "likes/views",
               },
@@ -237,17 +236,17 @@ export default async function CreatorDetailPage({
             ))}
           </section>
 
-          {/* CURADORIA */}
+          {/* CURATION */}
           <section className="space-y-6">
             <div>
               <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-1">
-                Avaliação editorial
+                Editorial review
               </div>
-              <h2 className="font-display text-3xl tracking-tight">Curadoria</h2>
+              <h2 className="font-display text-3xl tracking-tight">Curation</h2>
             </div>
             {(scores ?? []).length === 0 ? (
               <p className="text-muted-foreground text-sm">
-                Ainda não avaliada.
+                Not yet reviewed.
               </p>
             ) : (
               <div className="grid md:grid-cols-2 gap-5">
@@ -307,7 +306,7 @@ export default async function CreatorDetailPage({
                       {redFlags.length > 0 && (
                         <div className="border-l-2 border-destructive/50 pl-3 py-1 space-y-1">
                           <div className="text-[10px] uppercase tracking-[0.25em] text-destructive font-medium">
-                            Atenção
+                            Caution
                           </div>
                           <ul className="text-xs text-muted-foreground space-y-1">
                             {redFlags.map((f, idx) => (
@@ -320,12 +319,25 @@ export default async function CreatorDetailPage({
                       {s.sugestao_acao && (
                         <div className="border-t border-border/40 pt-4">
                           <div className="text-[10px] uppercase tracking-[0.3em] text-gold/70 mb-2">
-                            Recomendação
+                            Recommendation
                           </div>
                           <p className="text-sm italic text-foreground/90">
                             {s.sugestao_acao}
                           </p>
                         </div>
+                      )}
+
+                      {(s.evidencias as string[])?.length > 0 && (
+                        <details className="text-xs">
+                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground uppercase tracking-wider">
+                            Evidence
+                          </summary>
+                          <ul className="list-disc list-inside mt-3 space-y-2 text-muted-foreground">
+                            {(s.evidencias as string[]).map((e, idx) => (
+                              <li key={idx}>{e}</li>
+                            ))}
+                          </ul>
+                        </details>
                       )}
                     </article>
                   );
@@ -334,19 +346,19 @@ export default async function CreatorDetailPage({
             )}
           </section>
 
-          {/* MARCAS VENDIDAS */}
+          {/* BRANDS SOLD */}
           {brandsSold.length > 0 && (
             <section className="space-y-6">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-1">
-                  Portfólio detectado
+                  Detected portfolio
                 </div>
                 <h2 className="font-display text-3xl tracking-tight">
-                  Marcas que ela vende
+                  Brands she promotes
                 </h2>
                 <p className="text-sm text-muted-foreground mt-2 max-w-xl">
-                  Detectado em captions, hashtags e transcrições dos últimos
-                  vídeos.
+                  Detected in captions, hashtags and transcripts of recent
+                  videos.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -368,7 +380,7 @@ export default async function CreatorDetailPage({
             </section>
           )}
 
-          {/* CONTEÚDO RECENTE */}
+          {/* CONTENT */}
           {(videos ?? []).length > 0 && (
             <section className="space-y-6">
               <div className="flex items-end justify-between">
@@ -377,11 +389,11 @@ export default async function CreatorDetailPage({
                     Performance
                   </div>
                   <h2 className="font-display text-3xl tracking-tight">
-                    Vídeos em destaque
+                    Featured content
                   </h2>
                 </div>
                 <div className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Top {videos?.length} por audiência
+                  Top {videos?.length} by audience
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
@@ -410,7 +422,7 @@ export default async function CreatorDetailPage({
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                            sem capa
+                            no cover
                           </div>
                         )}
                         <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black via-black/60 to-transparent">
@@ -438,7 +450,7 @@ export default async function CreatorDetailPage({
                         {transcriptMap.get(v.id) && (
                           <details className="text-[10px] text-muted-foreground">
                             <summary className="cursor-pointer hover:text-foreground">
-                              Transcrição
+                              Transcript
                             </summary>
                             <p className="mt-2 leading-relaxed whitespace-pre-wrap">
                               {transcriptMap.get(v.id)?.slice(0, 800)}
@@ -459,7 +471,7 @@ export default async function CreatorDetailPage({
               href="/dashboard/creators"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider"
             >
-              ← Todas afiliadas
+              ← All affiliates
             </Link>
             {isAdmin && (
               <DeleteCreatorButton

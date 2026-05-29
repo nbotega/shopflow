@@ -13,9 +13,9 @@ export async function SiteHeader({
   } = await supabase.auth.getUser();
 
   const nav: Array<{ key: typeof active; href: string; label: string }> = [
-    { key: "overview", href: "/dashboard", label: "Visão geral" },
-    { key: "ranking", href: "/dashboard/scores", label: "Curadoria" },
-    { key: "afiliadas", href: "/dashboard/creators", label: "Afiliadas" },
+    { key: "overview", href: "/dashboard", label: "Overview" },
+    { key: "ranking", href: "/dashboard/scores", label: "Curation" },
+    { key: "afiliadas", href: "/dashboard/creators", label: "Affiliates" },
   ];
 
   return (
@@ -58,7 +58,7 @@ export async function SiteHeader({
               type="submit"
               className="text-muted-foreground hover:text-foreground transition-colors uppercase tracking-[0.2em]"
             >
-              Sair
+              Sign out
             </button>
           </form>
         </div>

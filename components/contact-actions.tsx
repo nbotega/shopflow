@@ -13,7 +13,7 @@ function buildWhatsAppLink(phone: string, handle: string, displayName: string | 
       ? `55${digits.replace(/^0/, "")}`
       : digits;
   const text = encodeURIComponent(
-    `Oi ${displayName ?? handle}! Aqui é da SHOPFLOW. Adoraríamos conversar sobre uma parceria de campanha com L'Oréal Luxe — você teria interesse?`
+    `Hi ${displayName ?? handle}! This is SHOPFLOW reaching out. We'd love to chat about a campaign partnership with L'Oréal Luxe — would you be interested?`
   );
   return `https://wa.me/${normalized}?text=${text}`;
 }
@@ -50,7 +50,7 @@ export function ContactActions({
           target="_blank"
           rel="noreferrer"
         >
-          Mensagem TikTok
+          Message on TikTok
         </a>
       </Button>
 
@@ -73,7 +73,7 @@ export function ContactActions({
 
       {email && (
         <Button size="sm" variant="outline" className="rounded-full" asChild>
-          <a href={`mailto:${email}?subject=Parceria L'Oréal Luxe`}>
+          <a href={`mailto:${email}?subject=L'Oréal Luxe partnership`}>
             Email
           </a>
         </Button>
@@ -85,7 +85,7 @@ export function ContactActions({
         className="rounded-full"
         onClick={copyHandle}
       >
-        {copied ? "Copiado ✓" : `Copiar @${handle}`}
+        {copied ? "Copied ✓" : `Copy @${handle}`}
       </Button>
     </div>
   );

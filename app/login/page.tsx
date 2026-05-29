@@ -17,20 +17,20 @@ export default function LoginPage({
             SHOPFLOW
           </div>
           <div className="text-[10px] uppercase tracking-[0.3em] mt-1 opacity-60">
-            Curadoria de afiliadas
+            Affiliate Curation Atelier
           </div>
         </div>
         <div className="space-y-4">
           <h1 className="font-display text-5xl leading-[1.05] tracking-tight">
-            A curadoria que sua marca de luxo merece.
+            The curation your luxury brand deserves.
           </h1>
           <p className="text-sm opacity-70 max-w-md leading-relaxed">
-            Plataforma editorial para selecionar, monitorar e ativar afiliadas
-            do TikTok Shop alinhadas com a persona de cada marca premium.
+            Editorial platform to discover, evaluate and activate TikTok Shop
+            affiliates aligned with every premium brand&apos;s persona.
           </p>
         </div>
         <div className="text-[10px] uppercase tracking-[0.3em] opacity-40">
-          Confidencial · Snack Content
+          Confidential · Snack Content
         </div>
       </div>
 
@@ -42,14 +42,14 @@ export default function LoginPage({
               SHOPFLOW
             </div>
             <div className="text-[10px] uppercase tracking-[0.3em] mt-1 text-muted-foreground">
-              Curadoria
+              Atelier
             </div>
           </div>
 
           <div>
-            <h2 className="font-display text-3xl">Entrar</h2>
+            <h2 className="font-display text-3xl">Sign in</h2>
             <p className="text-sm text-muted-foreground mt-2">
-              Acesse com as credenciais fornecidas pela equipe.
+              Access with the credentials provided by your team.
             </p>
           </div>
 
@@ -72,7 +72,7 @@ export default function LoginPage({
                 htmlFor="password"
                 className="text-xs uppercase tracking-wider"
               >
-                Senha
+                Password
               </Label>
               <Input
                 id="password"
@@ -87,7 +87,7 @@ export default function LoginPage({
               type="submit"
               className="w-full h-11 rounded-none uppercase tracking-[0.15em] text-xs"
             >
-              Acessar plataforma
+              Enter the atelier
             </Button>
           </form>
 

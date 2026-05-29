@@ -44,7 +44,6 @@ export default async function DashboardPage() {
 
   const scores = (scoresRaw ?? []) as ScoreRow[];
 
-  // Totais e KPIs
   const { count: poolCount } = await supabase
     .from("creators")
     .select("id", { count: "exact", head: true });
@@ -59,7 +58,6 @@ export default async function DashboardPage() {
       0
     );
 
-  // Distribuição global
   const distribution = { approve: 0, monitor: 0, borderline: 0, reject: 0 };
   for (const s of scores) {
     if (s.recommendation in distribution) {
@@ -68,7 +66,6 @@ export default async function DashboardPage() {
   }
   const totalEvals = scores.length || 1;
 
-  // Top picks por marca
   const topByBrand = new Map<
     string,
     Array<{ score: number; creator: CreatorMini | null }>
@@ -82,7 +79,6 @@ export default async function DashboardPage() {
     }
   }
 
-  // Por marca: stats
   type BrandStat = {
     id: string;
     name: string;
@@ -121,12 +117,12 @@ export default async function DashboardPage() {
           {/* Hero */}
           <section className="space-y-4 pt-4">
             <div className="text-[10px] uppercase tracking-[0.4em] text-gold/80">
-              · Visão geral · {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
+              · Overview · {new Date().toLocaleDateString("en-US", { day: "2-digit", month: "long", year: "numeric" })}
             </div>
             <h1 className="font-display text-6xl md:text-7xl leading-[0.95] tracking-tighter">
-              Curadoria de afiliadas
+              Affiliate curation
               <span className="block gold-text-gradient italic font-normal">
-                para marcas premium.
+                for premium brands.
               </span>
             </h1>
           </section>
@@ -135,24 +131,24 @@ export default async function DashboardPage() {
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               {
-                label: "Pool ativo",
-                value: poolCount?.toLocaleString("pt-BR") ?? "0",
-                suffix: "afiliadas",
+                label: "Active pool",
+                value: poolCount?.toLocaleString("en-US") ?? "0",
+                suffix: "affiliates",
               },
               {
-                label: "Marcas curadas",
+                label: "Brands curated",
                 value: brands?.length?.toString() ?? "0",
                 suffix: "L'Oréal Luxe",
               },
               {
-                label: "Avaliações",
-                value: scores.length.toLocaleString("pt-BR"),
-                suffix: "publicadas",
+                label: "Evaluations",
+                value: scores.length.toLocaleString("en-US"),
+                suffix: "published",
               },
               {
-                label: "Volume mapeado",
+                label: "Mapped volume",
                 value: `R$ ${(totalGMV / 1000).toFixed(0)}k`,
-                suffix: "em GMV TikTok",
+                suffix: "TikTok Shop GMV",
               },
             ].map((kpi) => (
               <div
@@ -172,30 +168,29 @@ export default async function DashboardPage() {
             ))}
           </section>
 
-          {/* Distribuição editorial */}
+          {/* Distribution */}
           <section className="card-glass p-8 space-y-6">
             <div className="flex items-end justify-between">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-1">
-                  Distribuição
+                  Distribution
                 </div>
-                <h2 className="font-display text-2xl">Decisão editorial</h2>
+                <h2 className="font-display text-2xl">Editorial decision</h2>
               </div>
               <Link
                 href="/dashboard/scores"
                 className="text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-gold transition-colors"
               >
-                Ver curadoria →
+                View curation →
               </Link>
             </div>
-            {/* Stacked bar */}
             <div className="h-3 flex overflow-hidden rounded-full bg-muted/50">
               {(
                 [
-                  { key: "approve", label: "Encaixam", color: "bg-gold" },
-                  { key: "monitor", label: "Observar", color: "bg-gold/40" },
-                  { key: "borderline", label: "Revisar", color: "bg-muted-foreground/40" },
-                  { key: "reject", label: "Fora", color: "bg-muted-foreground/15" },
+                  { key: "approve", label: "On brand", color: "bg-gold" },
+                  { key: "monitor", label: "Watch", color: "bg-gold/40" },
+                  { key: "borderline", label: "Review", color: "bg-muted-foreground/40" },
+                  { key: "reject", label: "Off brand", color: "bg-muted-foreground/15" },
                 ] as const
               ).map((seg) => {
                 const v = distribution[seg.key];
@@ -214,10 +209,10 @@ export default async function DashboardPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {(
                 [
-                  { key: "approve", label: "Encaixam" },
-                  { key: "monitor", label: "Observar" },
-                  { key: "borderline", label: "Revisar" },
-                  { key: "reject", label: "Fora" },
+                  { key: "approve", label: "On brand" },
+                  { key: "monitor", label: "Watch" },
+                  { key: "borderline", label: "Review" },
+                  { key: "reject", label: "Off brand" },
                 ] as const
               ).map((seg) => (
                 <div key={seg.key}>
@@ -237,14 +232,14 @@ export default async function DashboardPage() {
             </div>
           </section>
 
-          {/* Marcas curadas */}
+          {/* Brand cards */}
           <section className="space-y-6">
             <div className="flex items-end justify-between">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-1">
-                  Por marca
+                  By brand
                 </div>
-                <h2 className="font-display text-3xl">Marcas curadas</h2>
+                <h2 className="font-display text-3xl">Curated brands</h2>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -267,7 +262,7 @@ export default async function DashboardPage() {
                       </div>
                       <div className="text-right">
                         <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                          Match médio
+                          Avg. Match
                         </div>
                         <div className="font-display text-3xl gold-text-gradient">
                           {b.avg_score}
@@ -279,13 +274,13 @@ export default async function DashboardPage() {
                       <div>
                         <div className="font-display text-2xl">{b.approve}</div>
                         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          Encaixam
+                          On brand
                         </div>
                       </div>
                       <div>
                         <div className="font-display text-2xl">{b.monitor}</div>
                         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          Observar
+                          Watch
                         </div>
                       </div>
                       <div>
@@ -293,7 +288,7 @@ export default async function DashboardPage() {
                           {b.total}
                         </div>
                         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                          Avaliadas
+                          Reviewed
                         </div>
                       </div>
                     </div>
@@ -325,7 +320,7 @@ export default async function DashboardPage() {
                     )}
 
                     <div className="flex items-center justify-end text-xs uppercase tracking-[0.2em] text-muted-foreground group-hover:text-gold transition-colors">
-                      Ver ranking →
+                      Open ranking →
                     </div>
                   </Link>
                 );
@@ -333,7 +328,7 @@ export default async function DashboardPage() {
             </div>
           </section>
 
-          {/* Top picks globais — Spotlight */}
+          {/* Spotlight */}
           {scores.length > 0 && (
             <section className="space-y-6">
               <div className="flex items-end justify-between">
@@ -341,13 +336,13 @@ export default async function DashboardPage() {
                   <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-1">
                     Spotlight
                   </div>
-                  <h2 className="font-display text-3xl">Em alta</h2>
+                  <h2 className="font-display text-3xl">Top affiliates</h2>
                 </div>
                 <Link
                   href="/dashboard/creators"
                   className="text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-gold transition-colors"
                 >
-                  Todas afiliadas →
+                  All affiliates →
                 </Link>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">

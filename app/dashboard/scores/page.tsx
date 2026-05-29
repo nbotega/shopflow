@@ -39,10 +39,10 @@ function flatten<T>(v: T | T[] | null): T | null {
 }
 
 const REC_LABELS: Record<string, string> = {
-  approve: "Encaixam",
-  monitor: "Observar",
-  borderline: "Revisar",
-  reject: "Fora",
+  approve: "On brand",
+  monitor: "Watch",
+  borderline: "Review",
+  reject: "Off brand",
 };
 
 export default async function ScoresPage({
@@ -84,7 +84,6 @@ export default async function ScoresPage({
   const rows = (scores ?? []) as ScoreRow[];
 
   const counts = { approve: 0, monitor: 0, borderline: 0, reject: 0 };
-  // recarrega sem filtro de rec pra contar todos
   const { data: allScores } = await supabase
     .from("scores")
     .select("recommendation, brand:brands!inner(slug)")
@@ -103,20 +102,20 @@ export default async function ScoresPage({
         {/* Hero */}
         <section className="space-y-5">
           <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-            Curadoria editorial
+            Editorial curation
           </div>
           <h1 className="font-display text-5xl tracking-tighter">
             {selectedBrand?.name ?? "Ranking"}
           </h1>
           <p className="text-sm text-muted-foreground max-w-xl">
-            Afiliadas avaliadas contra a régua editorial de {selectedBrand?.name}
-            , ordenadas por compatibilidade.
+            Affiliates evaluated against the editorial standards of{" "}
+            {selectedBrand?.name}, ranked by brand compatibility.
           </p>
         </section>
 
         <div className="editorial-rule" />
 
-        {/* Tabs de marcas */}
+        {/* Brand tabs */}
         <nav className="flex gap-8 border-b border-border">
           {(brands ?? []).map((b) => {
             const active = b.slug === selectedBrandSlug;
@@ -136,10 +135,10 @@ export default async function ScoresPage({
           })}
         </nav>
 
-        {/* Filtros */}
+        {/* Filters */}
         <div className="flex flex-wrap gap-2 text-xs">
           {[
-            { key: null, label: `Todas · ${allScores?.length ?? 0}` },
+            { key: null, label: `All · ${allScores?.length ?? 0}` },
             { key: "approve", label: `${REC_LABELS.approve} · ${counts.approve}` },
             { key: "monitor", label: `${REC_LABELS.monitor} · ${counts.monitor}` },
             {
@@ -166,7 +165,7 @@ export default async function ScoresPage({
           })}
         </div>
 
-        {/* Lista editorial */}
+        {/* Editorial list */}
         <div className="space-y-1">
           {rows.map((r, i) => {
             const c = flatten(r.creator);
@@ -198,7 +197,7 @@ export default async function ScoresPage({
                   <div className="text-xs text-muted-foreground font-mono mt-0.5">
                     @{c.tiktok_handle}
                     {c.gmv_total_brl
-                      ? ` · R$ ${Number(c.gmv_total_brl).toLocaleString("pt-BR")} em vendas`
+                      ? ` · R$ ${Number(c.gmv_total_brl).toLocaleString("pt-BR")} in sales`
                       : ""}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2 line-clamp-2 max-w-2xl hidden md:block">
@@ -223,7 +222,7 @@ export default async function ScoresPage({
           })}
           {rows.length === 0 && (
             <div className="py-20 text-center text-muted-foreground text-sm">
-              Nenhuma afiliada nessa categoria.
+              No affiliates in this category yet.
             </div>
           )}
         </div>
