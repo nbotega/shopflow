@@ -10,6 +10,7 @@ import { BatchJudgeButton } from "@/components/batch-judge-button";
 import { BatchRefreshButton } from "@/components/batch-refresh-button";
 import { BatchExtractBrandsButton } from "@/components/batch-extract-brands-button";
 import { DiscoverHashtagsForm } from "@/components/discover-hashtags-form";
+import { BatchCacheAvatarsButton } from "@/components/batch-cache-avatars-button";
 
 // Esta página é interna — só Nelson acessa. Não tá no nav principal.
 export default async function AdminPage() {
@@ -47,6 +48,14 @@ export default async function AdminPage() {
     .map((r) => r.id);
 
   const allCreatorIds = rows.map((r) => r.id);
+
+  // Avatares ainda no CDN do TikTok (não cacheados)
+  const { data: nonCachedAvatars } = await supabase
+    .from("creators")
+    .select("id")
+    .not("avatar_url", "is", null)
+    .not("avatar_url", "ilike", "%/storage/v1/object/public/avatars/%");
+  const avatarsToCache = (nonCachedAvatars ?? []).map((c) => c.id);
 
   const { data: pendingAssignments } =
     enrichedIds.length > 0
@@ -111,6 +120,15 @@ export default async function AdminPage() {
                 Atualiza foto, followers e bio direto do perfil público TikTok.
               </p>
               <BatchRefreshButton creatorIds={missingAvatar} />
+            </div>
+            <div className="border border-border p-5 space-y-2">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                Cachear avatares (Storage)
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Baixa fotos do TikTok CDN pro nosso storage permanente. Resolve fotos quebradas.
+              </p>
+              <BatchCacheAvatarsButton creatorIds={avatarsToCache} />
             </div>
             <div className="border border-border p-5 space-y-2">
               <div className="text-xs uppercase tracking-wider text-muted-foreground">
