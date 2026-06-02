@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { proxyImageUrl } from "@/lib/img-proxy";
 
 type Size = "sm" | "md" | "lg" | "xl";
@@ -32,20 +35,24 @@ export function CreatorAvatar({
 }) {
   const sizeCls = SIZES[size];
   const proxied = proxyImageUrl(avatarUrl);
-  if (proxied) {
+  const [errored, setErrored] = useState(false);
+
+  if (proxied && !errored) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={proxied}
         alt={handle}
-        className={`${sizeCls} rounded-full object-cover border border-border/60`}
+        className={`${sizeCls} rounded-full object-cover border border-border/60 bg-accent`}
         loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={() => setErrored(true)}
       />
     );
   }
   return (
     <div
-      className={`${sizeCls} rounded-full flex items-center justify-center bg-accent text-accent-foreground font-display font-semibold border border-border/60`}
+      className={`${sizeCls} rounded-full flex items-center justify-center bg-accent text-accent-foreground font-display font-semibold border border-border/60 shrink-0`}
       aria-label={handle}
     >
       {initials(handle, displayName)}
