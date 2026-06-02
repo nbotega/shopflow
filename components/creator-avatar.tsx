@@ -1,3 +1,5 @@
+import { proxyImageUrl } from "@/lib/img-proxy";
+
 type Size = "sm" | "md" | "lg" | "xl";
 
 const SIZES: Record<Size, string> = {
@@ -29,11 +31,12 @@ export function CreatorAvatar({
   size?: Size;
 }) {
   const sizeCls = SIZES[size];
-  if (avatarUrl) {
+  const proxied = proxyImageUrl(avatarUrl);
+  if (proxied) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={avatarUrl}
+        src={proxied}
         alt={handle}
         className={`${sizeCls} rounded-full object-cover border border-border/60`}
         loading="lazy"

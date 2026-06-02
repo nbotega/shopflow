@@ -7,6 +7,7 @@ import { CreatorAvatar } from "@/components/creator-avatar";
 import { ContactActions } from "@/components/contact-actions";
 import { DeleteCreatorButton } from "@/components/delete-creator-button";
 import { AdminQuickActions } from "@/components/admin-quick-actions";
+import { proxyImageUrl } from "@/lib/img-proxy";
 
 const ADMIN_EMAILS = ["nelbotega@gmail.com"];
 
@@ -418,7 +419,7 @@ export default async function CreatorDetailPage({
                         {v.thumbnail_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={v.thumbnail_url}
+                            src={proxyImageUrl(v.thumbnail_url) ?? ""}
                             alt=""
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                           />
