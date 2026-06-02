@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
   // Tenta múltiplas combinações de headers — alguns CDNs do TikTok bloqueiam
   // certos User-Agents ou exigem Referer específico
-  const headerSets = [
+  const headerSets: Array<Record<string, string>> = [
     {
       "User-Agent":
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
